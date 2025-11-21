@@ -1,3 +1,6 @@
+// widgets/placeholder_box.dart
+// Simple placeholder widget so each screen has structure before the real UI is built
+
 import 'package:flutter/material.dart';
 
 class PlaceholderBox extends StatelessWidget {

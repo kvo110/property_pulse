@@ -1,7 +1,7 @@
 // navigation/nav_bar.dart
 // Simple bottom nav bar that switches between the 5 main screens.
-//
-// Screens are just placeholders for now. We'll fill out actual features in Week 1–3.
+
+// Screens are just placeholders for now. Awaiting actual features...
 
 import 'package:flutter/material.dart';
 

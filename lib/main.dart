@@ -1,7 +1,7 @@
 // main.dart
-// PropertyPulse - Real Estate Marketplace
+// PropertyPulse - Real Estate Market
 // Kenny Vo & Edison Zheng – Mobile App Development
-//
+
 // This file sets up the app theme (light/dark), NavBar, and Provider setup.
 
 import 'package:flutter/material.dart';

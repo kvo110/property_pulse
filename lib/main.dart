@@ -3,9 +3,12 @@
 // Kenny Vo & Edison Zheng – Mobile App Development
 
 // This file sets up the app theme (light/dark), NavBar, and Provider setup.
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+// Initialize Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // Theme imports
 import 'theme/theme_provider.dart';
@@ -14,7 +17,15 @@ import 'theme/app_theme.dart';
 // Nav bar (main navigation shell for the whole app)
 import 'navigation/nav_bar.dart';
 
-void main() {
+// Splash Screen
+import 'screens/splash_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase must be initialized before the app runs
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // Run the app with theme provider for dark/light mode
   runApp(const PropertyPulse());
 }
@@ -39,7 +50,7 @@ class PropertyPulse extends StatelessWidget {
             themeMode: themeProvider.currentTheme,
 
             // Bottom navigation bar is our home shell for now
-            home: const NavBar(),
+            home: const SplashScreen(),
           );
         },
       ),

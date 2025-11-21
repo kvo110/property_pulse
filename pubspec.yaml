@@ -31,4 +31,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Initialize assets 
+  assets:
+    - assets/images/
+
   

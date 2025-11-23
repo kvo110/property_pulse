@@ -7,3 +7,12 @@ The goal of the app is to provide a smooth, intuitive experience where buyers ca
 Property Pulse focuses on core marketplace functionality: browsing listings, robust search filtering, in-app messaging, photo galleries, and a straightforward scheduling system.
 
 # AI-Usage Log:
+- 11/23/2025, Sunday, 2:38 AM;
+    - "Why is my register screen working, but nothing is being sent into the Firebase database?"
+        - Changes were made to register_screen.dart, main.dart, login_screen.dart for compatbility with AuthProvider and AuthServices
+
+    - "My google-services.json is not updating after putting in my SHA keys. Can you guide me through the google console services steps to fix this issue"
+        - Key issues; "Firebase can't output OAuth entries into JSON if Google Cloud has none"
+        - Created credentials for OAuth client ID
+        - Obtain SHA keys
+        

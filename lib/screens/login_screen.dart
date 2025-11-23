@@ -1,9 +1,8 @@
 // screens/login_screen.dart
-// Temporary login screen so routing works
-// App will hook this into FirebaseAuth once the AuthService is created
+// Discord-styled login screen with dark theme + purple accent colors.
 
 import 'package:flutter/material.dart';
-import 'register_screen.dart'; // to navigate to sign-up page
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,111 +12,144 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // controllers hold whatever the user types in
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
-  bool isLoading = false; // used to disable the button during login
+  bool isLoading = false;
 
   @override
   void dispose() {
-    // cleaning up controllers
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  // This will run when the user press 'Log In'
   void _handleLogin() async {
     setState(() => isLoading = true);
 
-    // ATTENTION: implement Firebase log in (Only a placeholder currently)
     print("Email: ${emailController.text}");
     print("Password: ${passwordController.text}");
 
-    await Future.delayed(const Duration(seconds: 1)); // fake delay
+    await Future.delayed(const Duration(seconds: 1));
 
     setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Discord-style background color
+    const bgColor = Color(0xFF2C2F33);
+    const cardColor = Color(0xFF23272A);
+    const accent = Color(0xFF5865F2);
+
     return Scaffold(
-      // AppBar purely for navigation at this stage
-      appBar: AppBar(title: const Text("Property Pulse Login")),
+      backgroundColor: bgColor,
 
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Welcome Back",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 8),
-            Text(
-              "Log In to Access Property Pulse",
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-
-            const SizedBox(height: 30),
-
-            // Email field
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Welcome Back",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
 
-            const SizedBox(height: 16),
-
-            // Password field
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(),
+              const SizedBox(height: 10),
+              Text(
+                "Log in to your PropertyPulse account",
+                style: TextStyle(color: Colors.grey[400]),
               ),
-            ),
 
-            const SizedBox(height: 22),
+              const SizedBox(height: 25),
 
-            // Log In button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : _handleLogin,
-                child: isLoading
-                    ? const SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text("Log In"),
+              // Email field
+              TextField(
+                controller: emailController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.black12,
+                  labelText: "Email",
+                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 15),
 
-            // Register navigation
-            Center(
-              child: TextButton(
-                onPressed: () {
+              // Password field
+              TextField(
+                controller: passwordController,
+                style: const TextStyle(color: Colors.white),
+                obscureText: true,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.black12,
+                  labelText: "Password",
+                  labelStyle: TextStyle(color: Colors.grey[400]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 25),
+
+              // Login button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text("Log In"),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              GestureDetector(
+                onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const RegisterScreen()),
                   );
                 },
-                child: const Text("Don't have an account? Create one"),
+                child: Text(
+                  "Don't have an account? Sign up",
+                  style: TextStyle(color: accent, fontWeight: FontWeight.w500),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

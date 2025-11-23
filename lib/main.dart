@@ -15,7 +15,6 @@ import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 
 // Nav bar (main navigation shell for the whole app)
-import 'navigation/nav_bar.dart';
 
 // Splash Screen
 import 'screens/splash_screen.dart';

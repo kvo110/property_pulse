@@ -2,30 +2,24 @@
 // PropertyPulse - Real Estate Market
 // Kenny Vo & Edison Zheng – Mobile App Development
 
-// This file sets up the app theme (light/dark), NavBar, and Provider setup.
+// This file sets up the theme, authentication provider, and splash routing.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// Initialize Firebase
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
-// Theme imports
+import 'firebase_options.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
-
-// Nav bar (main navigation shell for the whole app)
-
-// Splash Screen
+import 'providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase must be initialized before the app runs
+  // Initialize Firebase before app loads
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Run the app with theme provider for dark/light mode
   runApp(const PropertyPulse());
 }
 
@@ -34,21 +28,24 @@ class PropertyPulse extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      // ThemeProvider manages whether the app is in light or dark mode
-      create: (_) => ThemeProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider()..listenToAuthState(),
+        ),
+      ],
+
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'PropertyPulse',
 
-            // Light and dark themes stored in app_theme.dart
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeProvider.currentTheme,
 
-            // Bottom navigation bar is our home shell for now
             home: const SplashScreen(),
           );
         },

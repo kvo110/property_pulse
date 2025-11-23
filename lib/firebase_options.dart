@@ -64,6 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '124531075016',
     projectId: 'property-pulse-d764a',
     storageBucket: 'property-pulse-d764a.firebasestorage.app',
+    androidClientId: '124531075016-8acv83ti7iulm7keotoe42g0ksimb7i0.apps.googleusercontent.com',
     iosBundleId: 'com.example.propertyPulse',
   );
 
@@ -73,6 +74,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '124531075016',
     projectId: 'property-pulse-d764a',
     storageBucket: 'property-pulse-d764a.firebasestorage.app',
+    androidClientId: '124531075016-8acv83ti7iulm7keotoe42g0ksimb7i0.apps.googleusercontent.com',
     iosBundleId: 'com.example.propertyPulse',
   );
 
@@ -85,4 +87,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'property-pulse-d764a.firebasestorage.app',
     measurementId: 'G-MM9PQY9NGL',
   );
+
 }

@@ -1,9 +1,11 @@
 // screens/register_screen.dart
 // Sign-up screen for new users.
 // Keeping the look consistent with the Discord-style theme used on login_screen.
-// Once we hook this up to FirebaseAuth + Firestore, the inputs here will create new user accounts.
+// This now fully connects to FirebaseAuth + Firestore through AuthProvider.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -14,17 +16,15 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Text controllers used for each field
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmController = TextEditingController();
 
-  bool isLoading = false; // just like login, used for loading state
+  bool isLoading = false;
 
   @override
   void dispose() {
-    // cleanup
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
@@ -32,9 +32,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // TEMP register function – we’ll replace this with real Firebase register.
+  // Firebase-connected register function
   void _handleRegister() async {
-    // Simple check so user doesn't type mismatched passwords
     if (passwordController.text != confirmController.text) {
       ScaffoldMessenger.of(
         context,
@@ -44,24 +43,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => isLoading = true);
 
-    print("Name: ${nameController.text}");
-    print("Email: ${emailController.text}");
-    print("Password: ${passwordController.text}");
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    await Future.delayed(const Duration(seconds: 1));
+    // Calls AuthProvider → AuthService → Firebase
+    final errorMsg = await auth.register(
+      nameController.text.trim(),
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (errorMsg != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMsg)));
+    }
 
     setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Consistent color palette
     const cardColor = Color(0xFF23272A);
     const accent = Color(0xFF5865F2);
 
     return Scaffold(
       body: Container(
-        // Purple gradient background (same as login)
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -100,7 +108,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 25),
 
-                  // Fields
                   _buildInput(nameController, "Full Name"),
                   const SizedBox(height: 15),
 
@@ -117,7 +124,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 25),
 
-                  // Create account button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -170,7 +176,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Helper function to avoid rewriting the same TextField code 4 times
   Widget _buildInput(
     TextEditingController controller,
     String label, {

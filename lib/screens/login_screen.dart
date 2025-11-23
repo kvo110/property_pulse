@@ -1,10 +1,11 @@
 // screens/login_screen.dart
 // Login UI for PropertyPulse.
-// I added extra comments so it's easier for both of us to understand.
-// This screen is ONLY handling UI for now – the actual Firebase login will be connected later
-// once we finish AuthService + AuthProvider.
+// This version is now fully connected to FirebaseAuth through AuthProvider.
+// Still keeping everything commented clearly so both of us can follow along easily.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,56 +16,58 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // TextField controllers – these capture whatever the user types in.
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  bool isLoading = false; // used to show the loading spinner during login
+  bool isLoading = false;
 
   @override
   void dispose() {
-    // Clean up the controllers when leaving the screen.
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
   }
 
-  // TEMP login function – we’re just printing values for now.
-  // Once AuthService is added, this will be replaced with real Firebase login.
+  // Actual Firebase login through AuthProvider
   void _handleLogin() async {
     setState(() => isLoading = true);
 
-    print("Email: ${emailController.text}");
-    print("Password: ${passwordController.text}");
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    // Fake loading delay just to make UI feel more real
-    await Future.delayed(const Duration(seconds: 1));
+    // Calls the real Firebase login function in AuthProvider → AuthService
+    final errorMsg = await auth.login(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (errorMsg != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMsg)));
+    }
 
     setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Colors used throughout the screen (Discord-style)
     const cardColor = Color(0xFF23272A);
     const accent = Color(0xFF5865F2);
 
     return Scaffold(
-      // Instead of a solid background, this is the purple gradient layer
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            // starts bright on top → dark on bottom
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [Color(0xFF5865F2), Color(0xFF4752C4), Color(0xFF2C2F33)],
           ),
         ),
 
-        // Centering the login card container
         child: Center(
           child: Container(
-            // This is the actual card that holds the fields/buttons
             padding: const EdgeInsets.all(24),
             margin: const EdgeInsets.symmetric(horizontal: 22),
             decoration: BoxDecoration(
@@ -72,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(14),
             ),
 
-            // The column holds: title → subtitle → fields → button → nav link
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -93,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 25),
 
-                // Email Input
                 TextField(
                   controller: emailController,
                   style: const TextStyle(color: Colors.white),
@@ -102,7 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 15),
 
-                // Password Input
                 TextField(
                   controller: passwordController,
                   obscureText: true,
@@ -112,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 25),
 
-                // Log In Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -140,7 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 14),
 
-                // Navigation to the Register page
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -164,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper function so input fields look consistent and clean
+  // Keeps all input fields consistent with the style used in RegisterScreen
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       filled: true,

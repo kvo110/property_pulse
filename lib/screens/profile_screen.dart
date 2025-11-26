@@ -12,9 +12,51 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   // Get user details from database
-  Future<DocumentSnapshot<Map<String, dynamic>>> _getUserData() async {
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _getUserData() {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    return FirebaseFirestore.instance.collection("users").doc(uid).get();
+    return FirebaseFirestore.instance.collection("users").doc(uid).snapshots();
+  }
+
+  // Dialog to update user name
+  Future<void> _editNameDialog(BuildContext context, String currentName) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    TextEditingController nameController = TextEditingController(text: currentName);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Name"),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: "Enter new name",
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String newName = nameController.text.trim();
+
+                if (newName.isNotEmpty) {
+                  await FirebaseFirestore.instance
+                      .collection("users")
+                      .doc(uid)
+                      .update({"name": newName});
+                }
+
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -38,18 +80,9 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // User profile displayer
-          FutureBuilder(
-            future: _getUserData(),
+          StreamBuilder(
+            stream: _getUserData(),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-
               if (!snapshot.hasData || !snapshot.data!.exists) {
                 return const Center(
                   child: Padding(
@@ -97,19 +130,35 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 20),
 
                       // Name
-                      Text(
-                        "Name:",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Name:",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.settings),
+                            onPressed: () {
+                              _editNameDialog(context, name);
+                            },
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 16),

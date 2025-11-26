@@ -15,4 +15,7 @@ Property Pulse focuses on core marketplace functionality: browsing listings, rob
         - Key issues; "Firebase can't output OAuth entries into JSON if Google Cloud has none"
         - Created credentials for OAuth client ID
         - Obtain SHA keys
-        
+
+- ChatGPT, 11/26/2025, Wednesday, 5:20 PM:
+    - "How can I update my profile display in real time according to my firestore database?"
+    - Changes all FutureBuilder related code to StreamBuilder so every new change to our database of profile details causes the UI to refresh itself with the new details.

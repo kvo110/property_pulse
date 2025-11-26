@@ -29,7 +29,7 @@ class AuthService {
       await _firestore.collection("users").doc(uid).set({
         "name": name,
         "email": email,
-        "createdAt": DateTime.now(),
+        "phoneNumber": "",
       });
 
       return null; // means registration was successful

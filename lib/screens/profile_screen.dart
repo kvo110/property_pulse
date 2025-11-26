@@ -17,20 +17,21 @@ class ProfileScreen extends StatelessWidget {
     return FirebaseFirestore.instance.collection("users").doc(uid).snapshots();
   }
 
-  // Dialog to update user name
-  Future<void> _editNameDialog(BuildContext context, String currentName) async {
+  // Dialog to update details
+  Future<void> _editDialog(
+      BuildContext context, String fieldName, String title, String currentValue) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    TextEditingController nameController = TextEditingController(text: currentName);
+    TextEditingController controller = TextEditingController(text: currentValue);
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Edit Name"),
+          title: Text("Edit $title"),
           content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: "Enter new name",
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: "Enter new $title",
             ),
           ),
           actions: [
@@ -40,15 +41,13 @@ class ProfileScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                String newName = nameController.text.trim();
-
-                if (newName.isNotEmpty) {
+                String newValue = controller.text.trim();
+                if (newValue.isNotEmpty || fieldName == "phoneNumber") {
                   await FirebaseFirestore.instance
                       .collection("users")
                       .doc(uid)
-                      .update({"name": newName});
+                      .update({fieldName: newValue});
                 }
-
                 Navigator.pop(context);
               },
               child: const Text("Save"),
@@ -98,6 +97,7 @@ class ProfileScreen extends StatelessWidget {
               final data = snapshot.data!.data()!;
               final name = data["name"] ?? "Unknown User";
               final email = data["email"] ?? "No Email";
+              final phone = data["phoneNumber"] ?? "";
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -153,9 +153,9 @@ class ProfileScreen extends StatelessWidget {
                             ],
                           ),
                           IconButton(
-                            icon: const Icon(Icons.settings),
+                            icon: const Icon(Icons.edit),
                             onPressed: () {
-                              _editNameDialog(context, name);
+                              _editDialog(context, "name", "Name", name);
                             },
                           ),
                         ],
@@ -177,6 +177,41 @@ class ProfileScreen extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
                         ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Phone number
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Phone Number:",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              Text(
+                                phone.isEmpty ? "Not Provided" : phone,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              _editDialog(
+                                  context, "phoneNumber", "Phone Number", phone);
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),

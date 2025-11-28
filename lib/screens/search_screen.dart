@@ -15,6 +15,8 @@ class _SearchScreenState extends State<SearchScreen> {
   String? bedrooms;
   String? bathrooms;
   String? propertyType;
+  String city = "";
+  String stateText = "";
 
   // Bedroom/Bathroom options
   final List<String> bedOptions = ["1", "2", "3", "4", "5+"];
@@ -106,6 +108,34 @@ class _SearchScreenState extends State<SearchScreen> {
                 return DropdownMenuItem(value: e, child: Text(e));
               }).toList(),
               onChanged: (val) => setState(() => propertyType = val),
+            ),
+
+            const SizedBox(height: 20),
+
+            // City filter
+            const Text(
+              "City",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: "Enter city",
+              ),
+              onChanged: (val) => city = val,
+            ),
+
+            const SizedBox(height: 20),
+
+            // State filter
+            const Text(
+              "State",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: "Enter state",
+              ),
+              onChanged: (val) => stateText = val,
             ),
           ],
         ),

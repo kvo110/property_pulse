@@ -137,6 +137,43 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               onChanged: (val) => stateText = val,
             ),
+
+            const SizedBox(height: 20),
+
+            // Apply/Clear filters
+            // Apply filter has no functionality until real estate data is implemented
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Filters Applied")),
+                      );
+                    },
+                    child: const Text("Apply Filters"),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        priceRange = const RangeValues(0, 99999999);
+                        bedrooms = null;
+                        bathrooms = null;
+                        propertyType = null;
+                        city = "";
+                        stateText = "";
+                      });
+                    },
+                    child: const Text("Clear"),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
-
+ 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -17,6 +17,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String? propertyType;
   String city = "";
   String stateText = "";
+  bool isGridView = true;
 
   // Bedroom/Bathroom options
   final List<String> bedOptions = ["1", "2", "3", "4", "5+"];
@@ -29,6 +30,57 @@ class _SearchScreenState extends State<SearchScreen> {
     "Townhome",
     "Multi-Family"
   ];
+
+  // Placeholder houses
+  final List<Map<String, dynamic>> placeholderHouses = [
+    {
+      "title": "Modern Condo",
+      "location": "Los Angeles, CA",
+      "image":
+          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+    },
+    {
+      "title": "Cozy Townhome",
+      "location": "Dallas, TX",
+      "image":
+          "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
+    },
+    {
+      "title": "Suburban House",
+      "location": "Phoenix, AZ",
+      "image":
+          "https://images.unsplash.com/photo-1507089947368-19c1da9775ae",
+    },
+  ];
+
+  // Cards to display houses
+  Widget buildPropertyCard(Map<String, dynamic> property) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.grey.shade200,
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              property["image"],
+              height: 140,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          ListTile(
+            title: Text(property["title"]),
+            subtitle: Text(property["location"]),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +226,46 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 30),
+
+            // Property results with grid/list view
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Results",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() => isGridView = !isGridView);
+                  },
+                  icon: Icon(
+                    isGridView ? Icons.grid_view : Icons.view_list,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            if (isGridView)
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 0.75,
+                children: placeholderHouses.map((property) {
+                  return buildPropertyCard(property);
+                }).toList(),
+              )
+            else
+              Column(
+                children: placeholderHouses.map((property) {
+                  return buildPropertyCard(property);
+                }).toList(),
+              ),
           ],
         ),
       ),

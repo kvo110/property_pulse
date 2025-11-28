@@ -11,7 +11,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  RangeValues priceRange = const RangeValues(0, 99999999);
+  RangeValues priceRange = const RangeValues(50000, 2000000);
   String? bedrooms;
   String? bathrooms;
   String? propertyType;
@@ -213,7 +213,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       setState(() {
-                        priceRange = const RangeValues(0, 99999999);
+                        priceRange = const RangeValues(50000, 2000000);
                         bedrooms = null;
                         bathrooms = null;
                         propertyType = null;

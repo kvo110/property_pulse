@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => PropertyDetailsScreen(property: property),
+            builder: (_) => DetailsScreen(property: property),
           ),
         );
       },
@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => PropertyDetailsScreen(property: property),
+            builder: (_) => DetailsScreen(property: property),
           ),
         );
       },

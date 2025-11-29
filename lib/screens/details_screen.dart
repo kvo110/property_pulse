@@ -3,10 +3,10 @@
 
 import 'package:flutter/material.dart';
 
-class PropertyDetailsScreen extends StatelessWidget {
+class DetailsScreen extends StatelessWidget {
   final Map<String, dynamic> property;
 
-  const PropertyDetailsScreen({super.key, required this.property});
+  const DetailsScreen({super.key, required this.property});
 
   @override
   Widget build(BuildContext context) {

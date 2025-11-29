@@ -2,6 +2,7 @@
 // Search + filter screen placeholder (Week 2 feature).
 
 import 'package:flutter/material.dart';
+import 'details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -38,46 +39,65 @@ class _SearchScreenState extends State<SearchScreen> {
       "location": "Los Angeles, CA",
       "image":
           "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+      "value": 850000,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
     },
     {
       "title": "Cozy Townhome",
       "location": "Dallas, TX",
       "image":
           "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
+      "value": 420000,
+      "bedrooms": 3,
+      "bathrooms": 2,
     },
     {
       "title": "Suburban House",
       "location": "Phoenix, AZ",
       "image":
           "https://images.unsplash.com/photo-1507089947368-19c1da9775ae",
+      "value": 610000,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
     },
   ];
 
   // Cards to display houses
   Widget buildPropertyCard(Map<String, dynamic> property) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.grey.shade200,
-      ),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              property["image"],
-              height: 140,
-              width: double.infinity,
-              fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetailsScreen(property: property),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.grey.shade200,
+        ),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(
+                property["image"],
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          ListTile(
-            title: Text(property["title"]),
-            subtitle: Text(property["location"]),
-          ),
-        ],
+            ListTile(
+              title: Text(property["title"]),
+              subtitle: Text(property["location"]),
+            ),
+          ],
+        ),
       ),
     );
   }

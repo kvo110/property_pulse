@@ -1,5 +1,6 @@
 // screens/search_screen.dart
 // Search + filter screen placeholder (Week 2 feature).
+// Apply filter has no functionality currently
 
 import 'package:flutter/material.dart';
 import 'details_screen.dart';
@@ -213,7 +214,6 @@ class _SearchScreenState extends State<SearchScreen> {
             const SizedBox(height: 20),
 
             // Apply/Clear filters
-            // Apply filter has no functionality until real estate data is implemented
             Row(
               children: [
                 Expanded(

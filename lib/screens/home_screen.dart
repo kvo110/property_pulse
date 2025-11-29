@@ -1,14 +1,188 @@
 // screens/home_screen.dart
-// Home screen placeholder until we implement the listing feed.
+// Home page with featured properties and recent listings
 
 import 'package:flutter/material.dart';
-import '../widgets/placeholder_box.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // Placeholder houses
+  final List<Map<String, dynamic>> placeholderHouses = [
+    {
+      "title": "Modern Condo",
+      "location": "Los Angeles, CA",
+      "image":
+          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+      "value": 850000,
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+    },
+    {
+      "title": "Cozy Townhome",
+      "location": "Dallas, TX",
+      "image":
+          "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
+      "value": 420000,
+      "bedrooms": 3,
+      "bathrooms": 2,
+    },
+    {
+      "title": "Suburban House",
+      "location": "Phoenix, AZ",
+      "image":
+          "https://images.unsplash.com/photo-1507089947368-19c1da9775ae",
+      "value": 610000,
+      "bedrooms": 3,
+      "bathrooms": 2.5,
+    },
+  ];
+
+  // Horizontal card
+  Widget buildHorizontalCard(Map<String, dynamic> property) {
+    return Container(
+      width: 260,
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Colors.grey.shade200,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            child: Image.network(
+              property["image"],
+              width: 260,
+              height: 150,
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  property["title"],
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+
+                Text(
+                  property["location"],
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+
+                const SizedBox(height: 8),
+
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Est. Value: \$${property['value']}",
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Vertical card
+  Widget buildVerticalCard(Map<String, dynamic> property) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Colors.grey.shade200,
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            child: Image.network(
+              property["image"],
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          ListTile(
+            title: Text(property["title"]),
+            subtitle: Text(property["location"]),
+            trailing: Text(
+              "\$${property["value"]}",
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: Colors.green),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: PlaceholderBox(text: "Home Page"));
+    return Scaffold(
+      appBar: AppBar(title: const Text("Home")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Featured Properties
+            const Text(
+              "Featured Properties",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+
+            SizedBox(
+              height: 260,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: placeholderHouses
+                    .map((property) => buildHorizontalCard(property))
+                    .toList(),
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            // Recent Listings
+            const Text(
+              "Recent Listings",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+
+            Column(
+              children: placeholderHouses
+                  .map((property) => buildVerticalCard(property))
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

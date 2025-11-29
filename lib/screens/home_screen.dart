@@ -3,6 +3,7 @@
 // Houses have price, bedroom, and bathroom details currently
 
 import 'package:flutter/material.dart';
+import 'details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -87,96 +88,116 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Horizontal card
   Widget buildHorizontalCard(Map<String, dynamic> property) {
-    return Container(
-      width: 260,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.grey.shade200,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: Image.network(
-              property["image"],
-              width: 260,
-              height: 150,
-              fit: BoxFit.cover,
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PropertyDetailsScreen(property: property),
           ),
+        );
+      },
+      child: Container(
+        width: 260,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: Colors.grey.shade200,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              child: Image.network(
+                property["image"],
+                width: 260,
+                height: 150,
+                fit: BoxFit.cover,
+              ),
+            ),
 
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  property["title"],
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-
-                Text(
-                  property["location"],
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-
-                const SizedBox(height: 8),
-
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Est. Value: \$${property['value']}",
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property["title"],
                     style: const TextStyle(
-                      color: Colors.green,
-                      fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+
+                  Text(
+                    property["location"],
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "Est. Value: \$${property['value']}",
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   // Vertical card
   Widget buildVerticalCard(Map<String, dynamic> property) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.grey.shade200,
-      ),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: Image.network(
-              property["image"],
-              height: 160,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PropertyDetailsScreen(property: property),
           ),
-          ListTile(
-            title: Text(property["title"]),
-            subtitle: Text(property["location"]),
-            trailing: Text(
-              "\$${property["value"]}",
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.green),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: Colors.grey.shade200,
+        ),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              child: Image.network(
+                property["image"],
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-        ],
+            ListTile(
+              title: Text(property["title"]),
+              subtitle: Text(property["location"]),
+              trailing: Text(
+                "\$${property["value"]}",
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.green),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

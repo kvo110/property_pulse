@@ -18,4 +18,9 @@ Property Pulse focuses on core marketplace functionality: browsing listings, rob
 
 - ChatGPT, 11/26/2025, Wednesday, 5:20 PM:
     - "How can I update my profile display in real time according to my firestore database?"
-    - Changes all FutureBuilder related code to StreamBuilder so every new change to our database of profile details causes the UI to refresh itself with the new details.
+    - Changes all FutureBuilder related code to StreamBuilder so every new change to our database of profile details causes the UI to refresh itself with the         new details.
+
+- ChatGPT, 11/30/2025, Sunday, 3:28 PM:
+    - "How to add visual indicators for a horizontal image list?"
+    - Generated and explained code for a basic sample of dot indicators.
+    - Tweaked and added the basic sample code for the image carousel on the details screen.

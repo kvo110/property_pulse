@@ -2,6 +2,7 @@
 // Screen to display all house details
 
 import 'package:flutter/material.dart';
+import '../providers/favorites.dart';
 
 class DetailsScreen extends StatefulWidget {
   final Map<String, dynamic> property;
@@ -14,6 +15,7 @@ class DetailsScreen extends StatefulWidget {
 
 class _DetailsScreenState extends State<DetailsScreen> {
   int currentIndex = 0;
+  bool isFavorited = false;
 
   late final List<String> images;
 
@@ -29,12 +31,56 @@ class _DetailsScreenState extends State<DetailsScreen> {
       widget.property["image"],
       widget.property["image"],
     ];
+
+    // Check if property is already favorited
+    isFavorited = favoriteHouses.any(
+      (house) => house["title"] == widget.property["title"],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.property["title"])),
+      appBar: AppBar(
+        title: Text(widget.property["title"]),
+        actions: [
+          // Favorite button
+          IconButton(
+            icon: Icon(
+              isFavorited ? Icons.favorite : Icons.favorite_border,
+              color: isFavorited
+                  ? Colors.red
+                  : Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black,
+            ),
+            onPressed: () {
+              setState(() {
+                if (isFavorited) {
+                  favoriteHouses.removeWhere(
+                    (house) =>
+                        house["title"] == widget.property["title"],
+                  );
+                } else {
+                  favoriteHouses.add(widget.property);
+                }
+
+                isFavorited = !isFavorited;
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isFavorited
+                        ? "Added to favorites"
+                        : "Removed from favorites",
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,6 @@
 // screens/search_screen.dart
-// Search + filter screen placeholder (Week 2 feature).
-// Apply filter has no functionality currently
+// Search + filter screen (Week 2 feature)
+// Updated so all cards + text respond correctly to theme mode
 
 import 'package:flutter/material.dart';
 import 'details_screen.dart';
@@ -8,12 +8,13 @@ import '../providers/demo_houses.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
- 
+
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  // Filter values
   RangeValues priceRange = const RangeValues(50000, 2000000);
   String? bedrooms;
   String? bathrooms;
@@ -22,43 +23,43 @@ class _SearchScreenState extends State<SearchScreen> {
   String stateText = "";
   bool isGridView = true;
 
-  // Bedroom/Bathroom options
+  // Options for dropdowns
   final List<String> bedOptions = ["1", "2", "3", "4", "5+"];
   final List<String> bathOptions = ["1", "1.5", "2", "2.5", "3+"];
-
-  // Property type options
   final List<String> propertyTypes = [
     "House",
     "Condo",
     "Townhome",
-    "Multi-Family"
+    "Multi-Family",
   ];
 
-  // Placeholder houses
+  // Demo placeholder
   final List<Map<String, dynamic>> placeholderHouses = demoHouses;
 
-  // Cards to display houses
+  // Theme-aware card builder
   Widget buildPropertyCard(Map<String, dynamic> property) {
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyMedium!.color;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => DetailsScreen(property: property),
-          ),
+          MaterialPageRoute(builder: (_) => DetailsScreen(property: property)),
         );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.grey.shade200,
+          color: cardColor,
         ),
         child: Column(
           children: [
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
               child: Image.network(
                 property["image"],
                 height: 140,
@@ -67,8 +68,14 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             ListTile(
-              title: Text(property["title"]),
-              subtitle: Text(property["location"]),
+              title: Text(
+                property["title"],
+                style: TextStyle(color: textColor),
+              ),
+              subtitle: Text(
+                property["location"],
+                style: TextStyle(color: textColor?.withOpacity(0.7)),
+              ),
             ),
           ],
         ),
@@ -78,19 +85,25 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.bodyMedium!.color;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Search Filters")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // Price Range Slider
-            const Text(
+            Text(
               "Price Range",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
+
             RangeSlider(
               values: priceRange,
               min: 50000,
@@ -107,86 +120,123 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 20),
 
-            // Bedrooms filter
-            const Text(
+            Text(
               "Bedrooms",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
             DropdownButton<String>(
-              hint: const Text("Select Bedrooms"),
+              hint: Text("Select Bedrooms", style: TextStyle(color: textColor)),
               value: bedrooms,
               isExpanded: true,
+              dropdownColor: Theme.of(context).cardColor,
               items: bedOptions.map((e) {
-                return DropdownMenuItem(value: e, child: Text(e));
+                return DropdownMenuItem(
+                  value: e,
+                  child: Text(e, style: TextStyle(color: textColor)),
+                );
               }).toList(),
               onChanged: (val) => setState(() => bedrooms = val),
             ),
 
             const SizedBox(height: 20),
 
-            // Bathrooms filter
-            const Text(
+            Text(
               "Bathrooms",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
             DropdownButton<String>(
-              hint: const Text("Select Bathrooms"),
+              hint: Text(
+                "Select Bathrooms",
+                style: TextStyle(color: textColor),
+              ),
               value: bathrooms,
               isExpanded: true,
+              dropdownColor: Theme.of(context).cardColor,
               items: bathOptions.map((e) {
-                return DropdownMenuItem(value: e, child: Text(e));
+                return DropdownMenuItem(
+                  value: e,
+                  child: Text(e, style: TextStyle(color: textColor)),
+                );
               }).toList(),
               onChanged: (val) => setState(() => bathrooms = val),
             ),
 
             const SizedBox(height: 20),
 
-            // Property type filter
-            const Text(
+            Text(
               "Property Type",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
             DropdownButton<String>(
-              hint: const Text("Select Property Type"),
+              hint: Text(
+                "Select Property Type",
+                style: TextStyle(color: textColor),
+              ),
               value: propertyType,
               isExpanded: true,
+              dropdownColor: Theme.of(context).cardColor,
               items: propertyTypes.map((e) {
-                return DropdownMenuItem(value: e, child: Text(e));
+                return DropdownMenuItem(
+                  value: e,
+                  child: Text(e, style: TextStyle(color: textColor)),
+                );
               }).toList(),
               onChanged: (val) => setState(() => propertyType = val),
             ),
 
             const SizedBox(height: 20),
 
-            // City filter
-            const Text(
+            Text(
               "City",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
             TextField(
-              decoration: const InputDecoration(
+              style: TextStyle(color: textColor),
+              decoration: InputDecoration(
                 hintText: "Enter city",
+                hintStyle: TextStyle(color: textColor?.withOpacity(0.6)),
               ),
               onChanged: (val) => city = val,
             ),
 
             const SizedBox(height: 20),
 
-            // State filter
-            const Text(
+            Text(
               "State",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
             TextField(
-              decoration: const InputDecoration(
+              style: TextStyle(color: textColor),
+              decoration: InputDecoration(
                 hintText: "Enter state",
+                hintStyle: TextStyle(color: textColor?.withOpacity(0.6)),
               ),
               onChanged: (val) => stateText = val,
             ),
 
             const SizedBox(height: 20),
 
-            // Apply/Clear filters
+            // Buttons
             Row(
               children: [
                 Expanded(
@@ -199,9 +249,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: const Text("Apply Filters"),
                   ),
                 ),
-
                 const SizedBox(width: 10),
-
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -222,20 +270,23 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 30),
 
-            // Property results with grid/list view
+            // Results title + switch
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Results",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
                 IconButton(
-                  onPressed: () {
-                    setState(() => isGridView = !isGridView);
-                  },
+                  onPressed: () => setState(() => isGridView = !isGridView),
                   icon: Icon(
                     isGridView ? Icons.grid_view : Icons.view_list,
+                    color: textColor,
                   ),
                 ),
               ],
@@ -243,21 +294,18 @@ class _SearchScreenState extends State<SearchScreen> {
 
             const SizedBox(height: 10),
 
+            // Grid or List view
             if (isGridView)
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 childAspectRatio: 0.75,
-                children: placeholderHouses.map((property) {
-                  return buildPropertyCard(property);
-                }).toList(),
+                children: placeholderHouses.map(buildPropertyCard).toList(),
               )
             else
               Column(
-                children: placeholderHouses.map((property) {
-                  return buildPropertyCard(property);
-                }).toList(),
+                children: placeholderHouses.map(buildPropertyCard).toList(),
               ),
           ],
         ),

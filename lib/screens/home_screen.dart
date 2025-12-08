@@ -1,6 +1,6 @@
 // screens/home_screen.dart
-// Home page with featured properties, recent listings, and quick filter buttons
-// Houses have price, bedroom, and bathroom details currently
+// Home page with featured properties, recent listings, and quick filters.
+// Updated so cards and text respond correctly to light/dark theme switching.
 
 import 'package:flutter/material.dart';
 import 'details_screen.dart';
@@ -14,12 +14,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Placeholder houses
+  // demo property data
   final List<Map<String, dynamic>> placeholderHouses = demoHouses;
 
-  // List for sorting
   late List<Map<String, dynamic>> filteredHouses;
   String? activeFilter;
+
   final List<String> quickAccessFilters = const [
     "Price",
     "Bedrooms",
@@ -32,35 +32,32 @@ class _HomeScreenState extends State<HomeScreen> {
     filteredHouses = List.from(placeholderHouses);
   }
 
-  // Sort logic (toggle on/off)
+  // simple sorting logic for the filter chips
   void applyFilter(String filter) {
     setState(() {
-      
-      // Tap again to turn off
       if (activeFilter == filter) {
         activeFilter = null;
         filteredHouses = List.from(placeholderHouses);
         return;
       }
 
-      // Turn on filter
       activeFilter = filter;
       filteredHouses = List.from(placeholderHouses);
 
       if (filter == "Price") {
         filteredHouses.sort((a, b) => a["value"].compareTo(b["value"]));
       } else if (filter == "Bedrooms") {
-        filteredHouses
-            .sort((a, b) => b["bedrooms"].compareTo(a["bedrooms"]));
+        filteredHouses.sort((a, b) => b["bedrooms"].compareTo(a["bedrooms"]));
       } else if (filter == "Bathrooms") {
-        filteredHouses
-            .sort((a, b) => b["bathrooms"].compareTo(a["bathrooms"]));
+        filteredHouses.sort((a, b) => b["bathrooms"].compareTo(a["bathrooms"]));
       }
     });
   }
 
-  // Horizontal card
+  // horizontal property card
   Widget buildHorizontalCard(Map<String, dynamic> property) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -75,13 +72,15 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: Colors.grey.shade200,
+          color: theme.colorScheme.surface, // dynamic theme surface
         ),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
               child: Image.network(
                 property["image"],
                 width: 260,
@@ -97,13 +96,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     property["title"],
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 16,
+                    ),
                   ),
 
                   Text(
                     property["location"],
-                    style: TextStyle(color: Colors.grey.shade700),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
                   ),
 
                   const SizedBox(height: 8),
@@ -112,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade100,
+                      color: Colors.green.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -132,8 +136,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Vertical card
+  // vertical property card
   Widget buildVerticalCard(Map<String, dynamic> property) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -147,12 +153,13 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: Colors.grey.shade200,
+          color: theme.colorScheme.surface, // dynamic surface color
         ),
         child: Column(
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
               child: Image.network(
                 property["image"],
                 height: 160,
@@ -160,13 +167,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: BoxFit.cover,
               ),
             ),
+
             ListTile(
-              title: Text(property["title"]),
-              subtitle: Text(property["location"]),
+              title: Text(
+                property["title"],
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
+              subtitle: Text(
+                property["location"],
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
               trailing: Text(
                 "\$${property["value"]}",
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: Colors.green),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
               ),
             ),
           ],
@@ -177,42 +195,55 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text("Home")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Quick filters
-            const Text(
+            Text(
               "Quick Access",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
 
             const SizedBox(height: 10),
 
+            // filter chips update theme background dynamically
             Wrap(
               spacing: 10,
               children: quickAccessFilters.map((filter) {
                 return ActionChip(
-                  label: Text(filter),
+                  label: Text(
+                    filter,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
                   backgroundColor: activeFilter == filter
                       ? Colors.green.shade300
-                      : Colors.grey.shade200,
-                  onPressed: () {
-                    applyFilter(filter);
-                  },
+                      : theme.colorScheme.surfaceVariant,
+                  onPressed: () => applyFilter(filter),
                 );
               }).toList(),
             ),
 
             const SizedBox(height: 20),
 
-            // Featured Properties
-            const Text(
+            Text(
               "Featured Properties",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
 
             const SizedBox(height: 10),
@@ -222,24 +253,27 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: filteredHouses
-                    .map((property) => buildHorizontalCard(property))
+                    .map((p) => buildHorizontalCard(p))
                     .toList(),
               ),
             ),
 
             const SizedBox(height: 30),
 
-            // Recent Listings
-            const Text(
+            Text(
               "Recent Listings",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
 
             const SizedBox(height: 10),
 
             Column(
               children: filteredHouses
-                  .map((property) => buildVerticalCard(property))
+                  .map((p) => buildVerticalCard(p))
                   .toList(),
             ),
           ],

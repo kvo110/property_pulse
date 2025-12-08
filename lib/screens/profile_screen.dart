@@ -1,5 +1,6 @@
 // screens/profile_screen.dart
-// User profile/settings screen. Dark/light mode toggle included.
+// User profile/settings screen with theme-aware UI adjustments.
+// This version fixes card + text colors so they adapt to light/dark mode correctly.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,31 +12,36 @@ import '../screens/login_screen.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // Get user details from database
+  // Pulls user Firestore document in real time
   Stream<DocumentSnapshot<Map<String, dynamic>>> _getUserData() {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return FirebaseFirestore.instance.collection("users").doc(uid).snapshots();
   }
 
-  // Dialog to update details
+  // Edit dialog for profile fields
   Future<void> _editDialog(
-      BuildContext context, String fieldName, String title, String currentValue) async {
+    BuildContext context,
+    String fieldName,
+    String title,
+    String currentValue,
+  ) async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    TextEditingController controller = TextEditingController(text: currentValue);
+    TextEditingController controller = TextEditingController(
+      text: currentValue,
+    );
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Theme.of(context).cardColor,
           title: Text("Edit $title"),
           content: TextField(
             controller: controller,
-            decoration: InputDecoration(
-              labelText: "Enter new $title",
-            ),
+            decoration: InputDecoration(labelText: "Enter new $title"),
           ),
           actions: [
-            ElevatedButton(
+            TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
@@ -67,7 +73,7 @@ class ProfileScreen extends StatelessWidget {
 
       body: ListView(
         children: [
-          // Dark mode switch
+          // Theme mode toggle
           SwitchListTile(
             title: const Text("Dark Mode"),
             value: themeProvider.isDarkMode,
@@ -78,7 +84,7 @@ class ProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // User profile displayer
+          // User profile viewer
           StreamBuilder(
             stream: _getUserData(),
             builder: (context, snapshot) {
@@ -86,10 +92,7 @@ class ProfileScreen extends StatelessWidget {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
-                    child: Text(
-                      "Unable to load profile data.",
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: Text("Unable to load profile data."),
                   ),
                 );
               }
@@ -105,31 +108,30 @@ class ProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16), // Rounded corners
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black.withOpacity(0.4)
+                            : Colors.black.withOpacity(0.1),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
                     ],
                   ),
 
-                  // Profile details
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Profile Information",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
 
                       const SizedBox(height: 20),
 
-                      // Name
+                      // Name Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -138,17 +140,14 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Text(
                                 "Name:",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context).hintColor,
+                                    ),
                               ),
                               Text(
                                 name,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ],
                           ),
@@ -163,25 +162,21 @@ class ProfileScreen extends StatelessWidget {
 
                       const SizedBox(height: 16),
 
-                      // Email
+                      // Email (non-editable)
                       Text(
                         "Email:",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).hintColor,
                         ),
                       ),
                       Text(
                         email,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Phone number
+                      // Phone Number Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -190,17 +185,14 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Text(
                                 "Phone Number:",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context).hintColor,
+                                    ),
                               ),
                               Text(
                                 phone.isEmpty ? "Not Provided" : phone,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ],
                           ),
@@ -208,7 +200,11 @@ class ProfileScreen extends StatelessWidget {
                             icon: const Icon(Icons.edit),
                             onPressed: () {
                               _editDialog(
-                                  context, "phoneNumber", "Phone Number", phone);
+                                context,
+                                "phoneNumber",
+                                "Phone Number",
+                                phone,
+                              );
                             },
                           ),
                         ],
@@ -222,7 +218,7 @@ class ProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Logout button
+          // Logout
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ElevatedButton(

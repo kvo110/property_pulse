@@ -23,7 +23,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void initState() {
     super.initState();
 
-    // Placeholder images for carousel
+    // placeholder repeated images for now
     images = [
       widget.property["image"],
       widget.property["image"],
@@ -32,7 +32,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       widget.property["image"],
     ];
 
-    // Check if property is already favorited
+    // check if it's already favorited
     isFavorited = favoriteHouses.any(
       (house) => house["title"] == widget.property["title"],
     );
@@ -40,19 +40,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.property["title"]),
         actions: [
-          // Favorite button
           IconButton(
             icon: Icon(
               isFavorited ? Icons.favorite : Icons.favorite_border,
               color: isFavorited
                   ? Colors.red
-                  : Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
+                  : theme.colorScheme.onSurface,
             ),
             onPressed: () {
               setState(() {
@@ -64,7 +63,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 } else {
                   favoriteHouses.add(widget.property);
                 }
-
                 isFavorited = !isFavorited;
               });
 
@@ -81,11 +79,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Carousel
             SizedBox(
               height: 260,
               child: Stack(
@@ -105,7 +103,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     },
                   ),
 
-                  // Carousel image indicators
+                  // little dots for carousel indicator
                   Positioned(
                     bottom: 10,
                     left: 0,
@@ -136,29 +134,27 @@ class _DetailsScreenState extends State<DetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
                     widget.property["title"],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
 
                   const SizedBox(height: 5),
 
-                  // Location
                   Text(
                     widget.property["location"],
                     style: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                       fontSize: 16,
                     ),
                   ),
 
                   const SizedBox(height: 15),
 
-                  // Price
                   Row(
                     children: [
                       const Icon(Icons.attach_money, color: Colors.green),
@@ -175,18 +171,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   const SizedBox(height: 10),
 
-                  // Bedrooms and bathrooms
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _infoBox(
-                        "Bedrooms",
-                        widget.property["bedrooms"].toString(),
-                      ),
-                      _infoBox(
-                        "Bathrooms",
-                        widget.property["bathrooms"].toString(),
-                      ),
+                      _infoBox(context, "Bedrooms",
+                          widget.property["bedrooms"].toString()),
+                      _infoBox(context, "Bathrooms",
+                          widget.property["bathrooms"].toString()),
                     ],
                   ),
                 ],
@@ -198,25 +189,34 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
-  Widget _infoBox(String label, String value) {
+  // simple box for bedrooms/bathrooms count
+  Widget _infoBox(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+
     return Container(
       width: 150,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.grey.shade200,
+        color: theme.colorScheme.surface, // dynamic surface color
       ),
       child: Column(
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),
-          Text(label),
+          Text(
+            label,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.8),
+            ),
+          ),
         ],
       ),
     );

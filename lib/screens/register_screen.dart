@@ -25,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    // cleaning up controllers
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
@@ -33,7 +34,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // Firebase-connected register function
+  // Now includes the automatic navigation back to LoginScreen on success
   void _handleRegister() async {
+    // quick check so user doesn't type mismatched passwords
     if (passwordController.text != confirmController.text) {
       ScaffoldMessenger.of(
         context,
@@ -54,13 +57,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!mounted) return;
 
+    setState(() => isLoading = false);
+
     if (errorMsg != null) {
+      // this means Firebase returned some kind of error (email in use, etc.)
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(errorMsg)));
+      return;
     }
 
-    setState(() => isLoading = false);
+    // If no error → registration SUCCESSFUL
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Account created! Please log in.")),
+    );
+
+    // now that the account is created, send the user back to the Login screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
@@ -70,6 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return Scaffold(
       body: Container(
+        // gradient background for a cleaner and modern feel
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -176,6 +193,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // helper so every text field matches
   Widget _buildInput(
     TextEditingController controller,
     String label, {

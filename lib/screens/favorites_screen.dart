@@ -1,21 +1,16 @@
 // screens/favorites_screen.dart
-// Displays all favorited properties
-// Updated to support dark/light theme colors so UI stays consistent
-// Updated to support multi-image listings
+// Shows the current user's favorited listings from Firestore.
 
 import 'package:flutter/material.dart';
-import 'details_screen.dart';
-import '../providers/favorites.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class FavoritesScreen extends StatefulWidget {
+import '../providers/property_provider.dart';
+import 'details_screen.dart';
+
+class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
-  @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
-}
-
-class _FavoritesScreenState extends State<FavoritesScreen> {
-  // theme helpers for cards
   Color _cardColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF2A2D32)
@@ -28,117 +23,120 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         : Colors.grey.shade700;
   }
 
-  String _firstImage(Map<String, dynamic> house) {
-    // use first image from new Firestore "images" list
-    if (house["images"] != null &&
-        house["images"] is List &&
-        house["images"].isNotEmpty) {
-      return house["images"][0];
-    }
-
-    // fallback: old "image" field
-    if (house["image"] != null) return house["image"];
-
-    return "https://via.placeholder.com/400x300.png?text=No+Image";
-  }
-
-  // Vertical card
-  Widget buildFavoriteCard(Map<String, dynamic> property, int index) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => DetailsScreen(property: property)),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: _cardColor(context),
-        ),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(18),
-              ),
-              child: Image.network(
-                _firstImage(property),
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            ListTile(
-              title: Text(
-                property["title"],
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-              subtitle: Text(
-                property["location"],
-                style: TextStyle(color: _subtitleColor(context)),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.favorite, color: Colors.red),
-                onPressed: () {
-                  setState(() {
-                    favoriteHouses.removeAt(index);
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Removed from favorites")),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Favorites")),
+        body: Center(
+          child: Text(
+            "Please log in to view favorites",
+            style: TextStyle(fontSize: 16, color: textColor),
+          ),
+        ),
+      );
+    }
+
+    final propertyProvider = Provider.of<PropertyProvider>(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Favorites")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: favoriteHouses.isEmpty
-            ? Center(
-                child: Text(
-                  "No favorited properties yet",
-                  style: TextStyle(fontSize: 16, color: textColor),
-                ),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Your Favorites",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: propertyProvider.userFavoritesStream(user.uid),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                  const SizedBox(height: 15),
+          final favorites = snapshot.data!;
 
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: favoriteHouses.length,
-                      itemBuilder: (context, index) {
-                        return buildFavoriteCard(favoriteHouses[index], index);
-                      },
-                    ),
-                  ),
-                ],
+          if (favorites.isEmpty) {
+            return Center(
+              child: Text(
+                "No favorited properties yet",
+                style: TextStyle(fontSize: 16, color: textColor),
               ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Your Favorites",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: favorites.length,
+                    itemBuilder: (context, index) {
+                      final property = favorites[index];
+                      final images = property["images"] as List<String>;
+                      final imageUrl = images.isNotEmpty
+                          ? images[0]
+                          : "https://via.placeholder.com/400x300.png?text=No+Image";
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DetailsScreen(property: property),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 15),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            color: _cardColor(context),
+                          ),
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(18),
+                                ),
+                                child: Image.network(
+                                  imageUrl,
+                                  height: 160,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              ListTile(
+                                title: Text(
+                                  property["title"],
+                                  style: TextStyle(color: textColor),
+                                ),
+                                subtitle: Text(
+                                  property["location"],
+                                  style: TextStyle(
+                                    color: _subtitleColor(context),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

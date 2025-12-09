@@ -39,8 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return "https://via.placeholder.com/400x300.png?text=No+Image";
   }
 
-  // Only toggles which filter is active.
-  // Actual sorting is handled inside build so we don't call setState during build.
   void applyFilter(String filter) {
     setState(() {
       if (activeFilter == filter) {
@@ -63,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Horizontal card, now uses first image helper
+  // Horizontal card — FIXED OVERFLOW
   Widget buildHorizontalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -82,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // <-- FIX
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
@@ -91,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Image.network(
                 _firstImage(property),
                 width: 260,
-                height: 150,
+                height: 120,
                 fit: BoxFit.cover,
               ),
             ),
@@ -99,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
+                mainAxisSize: MainAxisSize.min, // <-- FIX
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Vertical card, also using first image helper
+  // Vertical card (no overflow issue)
   Widget buildVerticalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -214,8 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           filteredHouses = List.from(snapshot.data!);
 
-          // Apply sorting based on current activeFilter,
-          // but only as a pure operation (no setState here).
+          // Apply sorting without setState
           _sortFilteredHouses();
 
           return SingleChildScrollView(
@@ -260,14 +259,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 SizedBox(
                   height: 260,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: filteredHouses
-                        .map((p) => buildHorizontalCard(p))
-                        .toList(),
+                    children: filteredHouses.map(buildHorizontalCard).toList(),
                   ),
                 ),
 
@@ -281,11 +280,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 Column(
-                  children: filteredHouses
-                      .map((p) => buildVerticalCard(p))
-                      .toList(),
+                  children: filteredHouses.map(buildVerticalCard).toList(),
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 // providers/favorites.dart
-// Stores global favorite properties for the app
+// Simple in-memory favorites list for now.
+// Later this will move to Firestore.
 
 List<Map<String, dynamic>> favoriteHouses = [];

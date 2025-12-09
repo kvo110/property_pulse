@@ -1,18 +1,31 @@
 // screens/messages_screen.dart
 // Shows all chat rooms the current user is part of.
-// Now supports: per-listing threads, avatars, unread badges, and last message preview.
+// Supports: avatars, unread counts, last message preview, per-listing title.
+// Updated: Timestamps now display in 12-hour AM/PM format.
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'chat_screen.dart';
 
 class MessagesScreen extends StatelessWidget {
   const MessagesScreen({super.key});
 
-  String _otherUser(List participants, String current) {
-    return participants.firstWhere((uid) => uid != current);
+  /// Returns the other participant in a 1-on-1 chat
+  String _otherUser(List users, String current) {
+    return users.firstWhere((uid) => uid != current);
+  }
+
+  /// Converts timestamps to 12-hour AM/PM format
+  String formatTime(DateTime time) {
+    int hour = time.hour;
+    final minute = time.minute.toString().padLeft(2, "0");
+    final suffix = hour >= 12 ? "PM" : "AM";
+
+    if (hour == 0) hour = 12; // Midnight → 12 AM
+    if (hour > 12) hour -= 12;
+
+    return "$hour:$minute $suffix";
   }
 
   @override
@@ -51,26 +64,24 @@ class MessagesScreen extends StatelessWidget {
               final chatId = chat.id;
 
               final participants = List<String>.from(
-                chat["participants"] ?? const [],
+                chat["participants"] ?? [],
               );
               final otherId = _otherUser(participants, uid);
 
               final lastMsg = chat["lastMessage"] ?? "";
               final ts = (chat["lastTimestamp"] as Timestamp?)?.toDate();
-              final data = chat.data() as Map<String, dynamic>;
 
-              final unreadMap = (data["unreadCounts"] is Map)
+              final data = chat.data() as Map<String, dynamic>;
+              final unreadCounts = (data["unreadCounts"] is Map)
                   ? Map<String, dynamic>.from(data["unreadCounts"])
                   : {};
 
-              final unread = unreadMap[uid] is int ? unreadMap[uid] : 0;
+              final unread = unreadCounts[uid] is int ? unreadCounts[uid] : 0;
 
-              final propertyTitle =
-                  chat.data().toString().contains("propertyTitle")
-                  ? (chat["propertyTitle"] ?? "Listing")
+              final propertyTitle = data.containsKey("propertyTitle")
+                  ? data["propertyTitle"]
                   : "Listing";
 
-              // We fetch the other user's profile so we can show their name + avatar
               return FutureBuilder<DocumentSnapshot>(
                 future: usersRef.doc(otherId).get(),
                 builder: (context, userSnap) {
@@ -78,12 +89,12 @@ class MessagesScreen extends StatelessWidget {
                   String? avatarUrl;
 
                   if (userSnap.hasData && userSnap.data!.exists) {
-                    final data = userSnap.data!.data() as Map<String, dynamic>?;
+                    final u = userSnap.data!.data() as Map<String, dynamic>?;
 
-                    if (data != null) {
-                      final name = (data["name"] as String?) ?? "";
-                      final email = (data["email"] as String?) ?? "";
-                      avatarUrl = (data["avatar"] as String?) ?? "";
+                    if (u != null) {
+                      final name = u["name"] ?? "";
+                      final email = u["email"] ?? "";
+                      avatarUrl = u["avatar"] ?? "";
 
                       displayName = name.isNotEmpty
                           ? name
@@ -95,22 +106,25 @@ class MessagesScreen extends StatelessWidget {
                     leading: avatarUrl != null && avatarUrl.isNotEmpty
                         ? CircleAvatar(backgroundImage: NetworkImage(avatarUrl))
                         : const CircleAvatar(child: Icon(Icons.person)),
+
                     title: Text(
                       propertyTitle,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
+
                     subtitle: Text(
                       "$displayName • $lastMsg",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         if (ts != null)
                           Text(
-                            "${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}",
+                            formatTime(ts),
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(
@@ -118,9 +132,9 @@ class MessagesScreen extends StatelessWidget {
                               ).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
-                        if (unread > 0) ...[
-                          const SizedBox(height: 4),
+                        if (unread > 0)
                           Container(
+                            margin: const EdgeInsets.only(top: 4),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
@@ -137,9 +151,9 @@ class MessagesScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
+
                     onTap: () {
                       Navigator.push(
                         context,

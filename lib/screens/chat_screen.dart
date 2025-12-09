@@ -1,9 +1,10 @@
 // screens/chat_screen.dart
-// Full 1-on-1 chat screen with:
+// 1-on-1 real-time chat including:
 // - text messages
-// - optional image messages via URL
-// - delivered/seen indicator for your last message
-// - unread counts handled in the parent chat doc.
+// - image messages
+// - unread counts
+// - seen receipts
+// - 12-hour AM/PM time formatting
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,16 +27,16 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final msgController = TextEditingController();
   final scrollController = ScrollController();
+  final uid = FirebaseAuth.instance.currentUser!.uid;
 
   String meName = "";
   String otherName = "";
-  final uid = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
     super.initState();
     _loadNames();
-    _markSeen(); // when we open, mark messages as seen for this user
+    _markSeen();
   }
 
   @override
@@ -43,6 +44,18 @@ class _ChatScreenState extends State<ChatScreen> {
     msgController.dispose();
     scrollController.dispose();
     super.dispose();
+  }
+
+  /// Convert to 12-hour AM/PM formatting
+  String formatTime(DateTime time) {
+    int hour = time.hour;
+    final minute = time.minute.toString().padLeft(2, "0");
+    final suffix = hour >= 12 ? "PM" : "AM";
+
+    if (hour == 0) hour = 12;
+    if (hour > 12) hour -= 12;
+
+    return "$hour:$minute $suffix";
   }
 
   Future<void> _loadNames() async {
@@ -57,19 +70,13 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Mark this chat as "seen" for the current user and reset their unread count.
   Future<void> _markSeen() async {
-    final chatRef = FirebaseFirestore.instance
-        .collection("chats")
-        .doc(widget.chatId);
-
-    await chatRef.update({
+    FirebaseFirestore.instance.collection("chats").doc(widget.chatId).update({
       "lastSeen.$uid": FieldValue.serverTimestamp(),
       "unreadCounts.$uid": 0,
     });
   }
 
-  // Basic text message send
   Future<void> _send() async {
     final text = msgController.text.trim();
     if (text.isEmpty) return;
@@ -83,67 +90,60 @@ class _ChatScreenState extends State<ChatScreen> {
 
     await msgRef.add({
       "text": text,
-      "imageUrl": "", // no image for normal text message
+      "imageUrl": "",
       "senderId": uid,
       "timestamp": FieldValue.serverTimestamp(),
     });
 
-    // Update chat preview + unread counts
     await chatRef.update({
       "lastMessage": text,
       "lastTimestamp": FieldValue.serverTimestamp(),
-      // current user has just sent the message, so no unread for them
       "unreadCounts.$uid": 0,
-      // bump unread for the other user
       "unreadCounts.${widget.otherUserId}": FieldValue.increment(1),
     });
 
     _scroll();
   }
 
-  // Sends an image message by asking user for a URL.
   Future<void> _sendImageByUrl() async {
     final urlController = TextEditingController();
 
     final url = await showDialog<String?>(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text("Send Image"),
-          content: TextField(
-            controller: urlController,
-            decoration: const InputDecoration(
-              labelText: "Image URL",
-              hintText: "https://example.com/photo.jpg",
-            ),
+      builder: (ctx) => AlertDialog(
+        title: const Text("Send Image"),
+        content: TextField(
+          controller: urlController,
+          decoration: const InputDecoration(
+            labelText: "Image URL",
+            hintText: "https://example.com/photo.jpg",
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, null),
-              child: const Text("Cancel"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(
+              ctx,
+              urlController.text.trim().isNotEmpty
+                  ? urlController.text.trim()
+                  : null,
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(
-                ctx,
-                urlController.text.trim().isEmpty
-                    ? null
-                    : urlController.text.trim(),
-              ),
-              child: const Text("Send"),
-            ),
-          ],
-        );
-      },
+            child: const Text("Send"),
+          ),
+        ],
+      ),
     );
 
-    if (url == null || url.isEmpty) return;
+    if (url == null) return;
 
     final chatRef = FirebaseFirestore.instance
         .collection("chats")
         .doc(widget.chatId);
-    final msgRef = chatRef.collection("messages");
 
-    await msgRef.add({
+    await chatRef.collection("messages").add({
       "text": "",
       "imageUrl": url,
       "senderId": uid,
@@ -162,7 +162,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scroll() {
     Future.delayed(const Duration(milliseconds: 200), () {
-      if (!mounted) return;
       if (scrollController.hasClients) {
         scrollController.animateTo(
           scrollController.position.maxScrollExtent,
@@ -173,7 +172,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Bubble for each message with optional "seen" status on the last message from me
   Widget _messageBubble(
     Map<String, dynamic> msg, {
     required bool isLastFromMe,
@@ -181,36 +179,33 @@ class _ChatScreenState extends State<ChatScreen> {
   }) {
     final theme = Theme.of(context);
     final isMe = msg["senderId"] == uid;
+
     final timestamp = (msg["timestamp"] as Timestamp?)?.toDate();
+    final timeText = timestamp == null ? "" : formatTime(timestamp);
 
-    final timeText = timestamp == null
-        ? ""
-        : "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
-
-    final bool seen =
+    final seen =
         isMe &&
         isLastFromMe &&
         otherLastSeen != null &&
         timestamp != null &&
         !timestamp.isAfter(otherLastSeen);
 
-    final bool hasImage =
-        msg["imageUrl"] != null && msg["imageUrl"].toString().isNotEmpty;
-    final String text = (msg["text"] ?? "").toString();
+    final hasImage = msg["imageUrl"] != null && msg["imageUrl"] != "";
+    final text = msg["text"] ?? "";
 
-    final isDark = theme.brightness == Brightness.dark;
-
-    final Color bubbleColor = isMe
-        ? (isDark ? theme.colorScheme.primary : Colors.blue)
-        : (isDark ? theme.colorScheme.surfaceVariant : Colors.grey.shade300);
-
-    final Color textColor = isMe ? Colors.white : theme.colorScheme.onSurface;
+    final bubbleColor = isMe
+        ? (theme.brightness == Brightness.dark
+              ? theme.colorScheme.primary
+              : Colors.blue)
+        : (theme.brightness == Brightness.dark
+              ? theme.colorScheme.surfaceVariant
+              : Colors.grey.shade300);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(10),
         constraints: const BoxConstraints(maxWidth: 280),
         decoration: BoxDecoration(
           color: bubbleColor,
@@ -226,9 +221,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(msg["imageUrl"], fit: BoxFit.cover),
               ),
-            if (hasImage && text.isNotEmpty) const SizedBox(height: 6),
-            if (text.isNotEmpty)
-              Text(text, style: TextStyle(color: textColor, fontSize: 16)),
+            if (text.isNotEmpty) ...[
+              if (hasImage) const SizedBox(height: 6),
+              Text(
+                text,
+                style: TextStyle(
+                  color: isMe ? Colors.white : theme.colorScheme.onSurface,
+                  fontSize: 16,
+                ),
+              ),
+            ],
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -236,18 +238,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(
                   timeText,
                   style: TextStyle(
-                    fontSize: 11,
                     color: isMe ? Colors.white70 : Colors.black54,
+                    fontSize: 11,
                   ),
                 ),
-                if (isMe) ...[
-                  const SizedBox(width: 4),
+                if (isMe)
                   Icon(
                     seen ? Icons.done_all : Icons.check,
-                    size: 14,
                     color: isMe ? Colors.white70 : Colors.black54,
+                    size: 14,
                   ),
-                ],
               ],
             ),
           ],
@@ -265,10 +265,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(otherName)),
-
       body: Column(
         children: [
-          // Chat + seen state come from here
           Expanded(
             child: StreamBuilder<DocumentSnapshot>(
               stream: chatRef.snapshots(),
@@ -281,7 +279,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     chatSnap.data!.data() as Map<String, dynamic>? ?? {};
                 final lastSeenMap =
                     (chatData["lastSeen"] as Map<String, dynamic>?) ?? {};
-                final otherLastSeenTs =
+                final otherLastSeen =
                     (lastSeenMap[widget.otherUserId] as Timestamp?)?.toDate();
 
                 return StreamBuilder<QuerySnapshot>(
@@ -289,20 +287,18 @@ class _ChatScreenState extends State<ChatScreen> {
                       .collection("messages")
                       .orderBy("timestamp")
                       .snapshots(),
-                  builder: (context, snap) {
-                    if (!snap.hasData) {
+                  builder: (context, msgSnap) {
+                    if (!msgSnap.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final msgs = snap.data!.docs;
+                    final msgs = msgSnap.data!.docs;
 
-                    // every time messages update, mark this chat as seen + scroll down
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       _markSeen();
                       _scroll();
                     });
 
-                    // find index of the last message sent by current user
                     int lastFromMeIndex = -1;
                     for (int i = msgs.length - 1; i >= 0; i--) {
                       final data = msgs[i].data() as Map<String, dynamic>;
@@ -326,7 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         return _messageBubble(
                           msg,
                           isLastFromMe: isLastFromMe,
-                          otherLastSeen: otherLastSeenTs,
+                          otherLastSeen: otherLastSeen,
                         );
                       },
                     );
@@ -336,7 +332,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // Input bar
           SafeArea(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -344,8 +339,8 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: _sendImageByUrl,
                     icon: const Icon(Icons.image_outlined),
+                    onPressed: _sendImageByUrl,
                   ),
                   Expanded(
                     child: TextField(

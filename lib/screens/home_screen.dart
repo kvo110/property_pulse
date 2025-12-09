@@ -1,4 +1,7 @@
 // screens/home_screen.dart
+// Home page with featured properties, recent listings, and quick filters.
+// Now using PropertyProvider + Firestore instead of hard-coded demo data.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
@@ -12,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Just keeping track of which filter is active.
+  // We will sort based on this inside the StreamBuilder.
   String? activeFilter;
 
   final List<String> quickAccessFilters = const [
@@ -20,33 +25,20 @@ class _HomeScreenState extends State<HomeScreen> {
     "Bathrooms",
   ];
 
-  // This now returns a *new filtered list* without calling setState.
-  List<Map<String, dynamic>> applyFilterLogic(
-    List<Map<String, dynamic>> list,
-    String? filter,
-  ) {
-    if (filter == null) return list;
-
-    final newList = List<Map<String, dynamic>>.from(list);
-
-    if (filter == "Price") {
-      newList.sort((a, b) => a["value"].compareTo(b["value"]));
-    } else if (filter == "Bedrooms") {
-      newList.sort((a, b) => b["bedrooms"].compareTo(a["bedrooms"]));
-    } else if (filter == "Bathrooms") {
-      newList.sort((a, b) => b["bathrooms"].compareTo(a["bathrooms"]));
-    }
-
-    return newList;
-  }
-
-  void onFilterTap(String filter) {
+  // When the user taps a chip, we only update activeFilter.
+  // The actual list comes from Firestore, so we rebuild and sort in build().
+  void applyFilter(String filter) {
     setState(() {
-      activeFilter = (activeFilter == filter) ? null : filter;
+      if (activeFilter == filter) {
+        // tap again to turn filter off
+        activeFilter = null;
+      } else {
+        activeFilter = filter;
+      }
     });
   }
 
-  // horizontal card
+  // Horizontal card for the "Featured" section
   Widget buildHorizontalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -67,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Property image
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(18),
@@ -78,6 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: BoxFit.cover,
               ),
             ),
+
+            // Basic info
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -124,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // vertical card
+  // Vertical card for the "Recent listings" section
   Widget buildVerticalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -186,24 +181,58 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Home")),
+
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: propertyProvider.allPropertiesStream(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text("Error loading properties"));
+          }
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // full list from Firestore
           final allProperties = snapshot.data!;
 
-          // filtered list WITHOUT setState inside build
-          final filteredHouses = applyFilterLogic(allProperties, activeFilter);
+          // Start from the full Firestore list each time
+          final List<Map<String, dynamic>> filteredHouses =
+              List<Map<String, dynamic>>.from(allProperties);
+
+          // Apply sorting based on activeFilter
+          if (activeFilter != null) {
+            if (activeFilter == "Price") {
+              filteredHouses.sort((a, b) => a["value"].compareTo(b["value"]));
+            } else if (activeFilter == "Bedrooms") {
+              filteredHouses.sort(
+                (a, b) => b["bedrooms"].compareTo(a["bedrooms"]),
+              );
+            } else if (activeFilter == "Bathrooms") {
+              filteredHouses.sort(
+                (a, b) => b["bathrooms"].compareTo(a["bathrooms"]),
+              );
+            }
+          }
+
+          // If there are no listings yet, show a simple helper message
+          if (filteredHouses.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  "No properties yet. Try adding a listing from the Create tab.",
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Quick filters line
                 Text(
                   "Quick Access",
                   style: TextStyle(
@@ -217,20 +246,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 Wrap(
                   spacing: 10,
                   children: quickAccessFilters.map((filter) {
+                    final bool isActive = activeFilter == filter;
                     return ActionChip(
                       label: Text(
                         filter,
                         style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
-                      backgroundColor: activeFilter == filter
+                      backgroundColor: isActive
                           ? Colors.green.shade300
                           : theme.colorScheme.surfaceVariant,
-                      onPressed: () => onFilterTap(filter),
+                      onPressed: () => applyFilter(filter),
                     );
                   }).toList(),
                 ),
 
                 const SizedBox(height: 20),
+
+                // Featured section
                 Text(
                   "Featured Properties",
                   style: TextStyle(
@@ -239,18 +271,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-
                 const SizedBox(height: 10),
 
                 SizedBox(
                   height: 260,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: filteredHouses.map(buildHorizontalCard).toList(),
+                    children: filteredHouses
+                        .map((p) => buildHorizontalCard(p))
+                        .toList(),
                   ),
                 ),
 
                 const SizedBox(height: 30),
+
+                // Recent section
                 Text(
                   "Recent Listings",
                   style: TextStyle(
@@ -259,10 +294,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
-
                 const SizedBox(height: 10),
+
                 Column(
-                  children: filteredHouses.map(buildVerticalCard).toList(),
+                  children: filteredHouses
+                      .map((p) => buildVerticalCard(p))
+                      .toList(),
                 ),
               ],
             ),

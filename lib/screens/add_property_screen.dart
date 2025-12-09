@@ -1,5 +1,6 @@
 // screens/add_property_screen.dart
 // Allows users to create new property listings and save them to Firestore.
+// Note: this screen sits inside the bottom nav as a tab, so we do not pop the route.
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,17 +36,21 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
   // Saves the new listing to Firestore
   Future<void> saveProperty() async {
+    // Simple validation for required fields
     if (titleController.text.isEmpty ||
         locationController.text.isEmpty ||
         valueController.text.isEmpty ||
         bedsController.text.isEmpty ||
         bathsController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill out all required fields")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please fill out all required fields")),
+        );
+      }
       return;
     }
 
+    if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
@@ -60,24 +65,37 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         "image": imageController.text.trim().isEmpty
             ? "https://via.placeholder.com/400x300.png?text=No+Image"
             : imageController.text.trim(),
-        "ownerId": uid, // <-- Added this
-        "createdAt": DateTime.now(), // optional but helpful later
+        "ownerId": uid,
+        "createdAt": DateTime.now(),
       });
 
       if (!mounted) return;
+
+      // Clear the form so it feels like a fresh state
+      titleController.clear();
+      locationController.clear();
+      valueController.clear();
+      bedsController.clear();
+      bathsController.clear();
+      imageController.clear();
 
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Listing Created")));
 
-      Navigator.pop(context); // return to previous screen
+      // Important: we do NOT Navigator.pop here because this screen is part
+      // of the bottom nav tab system, not a pushed route.
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     }
 
-    setState(() => isLoading = false);
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
   }
 
   Widget inputField(

@@ -14,6 +14,14 @@ class PropertyProvider with ChangeNotifier {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
 
+        // Pull images list safely even if missing
+        final List<String> imagesList = data["images"] != null
+            ? List<String>.from(data["images"])
+            : [
+                data["image"] ??
+                    "https://via.placeholder.com/400x300.png?text=No+Image",
+              ];
+
         return {
           "id": doc.id,
           "title": data["title"] ?? "No Title",
@@ -21,9 +29,10 @@ class PropertyProvider with ChangeNotifier {
           "value": data["value"] ?? 0,
           "bedrooms": data["bedrooms"] ?? 0,
           "bathrooms": data["bathrooms"] ?? 0,
-          "image":
-              data["image"] ??
-              "https://via.placeholder.com/400x300.png?text=No+Image",
+
+          // New: always use images[]
+          "images": imagesList,
+
           "ownerId": data["ownerId"] ?? "",
           "createdAt": data["createdAt"],
         };

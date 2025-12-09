@@ -2,8 +2,6 @@
 // PropertyPulse - Real Estate Market
 // Kenny Vo & Edison Zheng – Mobile App Development
 
-// This file sets up the theme, authentication provider, and splash routing.
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,6 +10,7 @@ import 'firebase_options.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/property_provider.dart'; // <-- added
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -31,8 +30,13 @@ class PropertyPulse extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+
         ChangeNotifierProvider(
           create: (_) => AuthProvider()..listenToAuthState(),
+        ),
+
+        ChangeNotifierProvider(
+          create: (_) => PropertyProvider(), // <-- NEW PROVIDER
         ),
       ],
 

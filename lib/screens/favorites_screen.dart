@@ -1,6 +1,7 @@
 // screens/favorites_screen.dart
 // Displays all favorited properties
 // Updated to support dark/light theme colors so UI stays consistent
+// Updated to support multi-image listings
 
 import 'package:flutter/material.dart';
 import 'details_screen.dart';
@@ -14,21 +15,34 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  // helper so cards match current theme mode automatically
+  // theme helpers for cards
   Color _cardColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF2A2D32)
         : Colors.grey.shade200;
   }
 
-  // helper for subtitles in dark mode
   Color _subtitleColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? Colors.grey.shade400
         : Colors.grey.shade700;
   }
 
-  // Vertical favorite card
+  String _firstImage(Map<String, dynamic> house) {
+    // use first image from new Firestore "images" list
+    if (house["images"] != null &&
+        house["images"] is List &&
+        house["images"].isNotEmpty) {
+      return house["images"][0];
+    }
+
+    // fallback: old "image" field
+    if (house["image"] != null) return house["image"];
+
+    return "https://via.placeholder.com/400x300.png?text=No+Image";
+  }
+
+  // Vertical card
   Widget buildFavoriteCard(Map<String, dynamic> property, int index) {
     return GestureDetector(
       onTap: () {
@@ -41,7 +55,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: _cardColor(context), // theme-aware background
+          color: _cardColor(context),
         ),
         child: Column(
           children: [
@@ -50,7 +64,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 top: Radius.circular(18),
               ),
               child: Image.network(
-                property["image"],
+                _firstImage(property),
                 height: 160,
                 width: double.infinity,
                 fit: BoxFit.cover,

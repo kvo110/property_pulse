@@ -1,5 +1,5 @@
 // screens/details_screen.dart
-// Now supports MULTIPLE IMAGES from Firestore.
+// Now supports MULTIPLE IMAGES from Firestore and falls back safely if list is missing.
 
 import 'package:flutter/material.dart';
 
@@ -20,8 +20,18 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void initState() {
     super.initState();
 
-    // Load images list from Firestore
-    images = List<String>.from(widget.property["images"]);
+    // Try to load "images" list from Firestore data.
+    final rawImages = widget.property["images"];
+
+    if (rawImages is List && rawImages.isNotEmpty) {
+      images = rawImages.map((e) => e.toString()).toList();
+    } else if (widget.property["image"] != null) {
+      // Fallback to a single "image" field (old structure).
+      images = [widget.property["image"].toString()];
+    } else {
+      // Final fallback if nothing is provided.
+      images = ["https://via.placeholder.com/400x300.png?text=No+Image"];
+    }
   }
 
   @override

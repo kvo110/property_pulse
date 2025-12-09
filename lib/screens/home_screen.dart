@@ -1,5 +1,6 @@
 // screens/home_screen.dart
-// Home page displaying Firestore-powered listings with multi-image support.
+// Home page displaying Firestore-powered listings with multi-image support
+// and filter sorting that doesn't call setState during build.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,26 +24,46 @@ class _HomeScreenState extends State<HomeScreen> {
     "Bathrooms",
   ];
 
+  // Helper to safely grab the first image from the list
+  String _firstImage(Map<String, dynamic> property) {
+    final rawImages = property["images"];
+
+    if (rawImages is List && rawImages.isNotEmpty) {
+      return rawImages.first.toString();
+    }
+
+    if (property["image"] != null) {
+      return property["image"].toString();
+    }
+
+    return "https://via.placeholder.com/400x300.png?text=No+Image";
+  }
+
+  // Only toggles which filter is active.
+  // Actual sorting is handled inside build so we don't call setState during build.
   void applyFilter(String filter) {
     setState(() {
       if (activeFilter == filter) {
         activeFilter = null;
-        return;
-      }
-
-      activeFilter = filter;
-
-      if (filter == "Price") {
-        filteredHouses.sort((a, b) => a["value"].compareTo(b["value"]));
-      } else if (filter == "Bedrooms") {
-        filteredHouses.sort((a, b) => b["bedrooms"].compareTo(a["bedrooms"]));
-      } else if (filter == "Bathrooms") {
-        filteredHouses.sort((a, b) => b["bathrooms"].compareTo(a["bathrooms"]));
+      } else {
+        activeFilter = filter;
       }
     });
   }
 
-  // Horizontal card, now uses images[0]
+  void _sortFilteredHouses() {
+    if (activeFilter == null) return;
+
+    if (activeFilter == "Price") {
+      filteredHouses.sort((a, b) => a["value"].compareTo(b["value"]));
+    } else if (activeFilter == "Bedrooms") {
+      filteredHouses.sort((a, b) => b["bedrooms"].compareTo(a["bedrooms"]));
+    } else if (activeFilter == "Bathrooms") {
+      filteredHouses.sort((a, b) => b["bathrooms"].compareTo(a["bathrooms"]));
+    }
+  }
+
+  // Horizontal card, now uses first image helper
   Widget buildHorizontalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -68,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: Radius.circular(18),
               ),
               child: Image.network(
-                property["images"][0],
+                _firstImage(property),
                 width: 260,
                 height: 150,
                 fit: BoxFit.cover,
@@ -121,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Vertical card (same update)
+  // Vertical card, also using first image helper
   Widget buildVerticalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -145,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 top: Radius.circular(18),
               ),
               child: Image.network(
-                property["images"][0],
+                _firstImage(property),
                 height: 160,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -193,13 +214,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
           filteredHouses = List.from(snapshot.data!);
 
-          if (activeFilter != null) applyFilter(activeFilter!);
+          // Apply sorting based on current activeFilter,
+          // but only as a pure operation (no setState here).
+          _sortFilteredHouses();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  "Quick Access",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Wrap(
+                  spacing: 10,
+                  children: quickAccessFilters.map((filter) {
+                    return ActionChip(
+                      label: Text(
+                        filter,
+                        style: TextStyle(color: theme.colorScheme.onSurface),
+                      ),
+                      backgroundColor: activeFilter == filter
+                          ? Colors.green.shade300
+                          : theme.colorScheme.surfaceVariant,
+                      onPressed: () => applyFilter(filter),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 20),
+
                 Text(
                   "Featured Properties",
                   style: TextStyle(
@@ -213,10 +265,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 260,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: filteredHouses.map(buildHorizontalCard).toList(),
+                    children: filteredHouses
+                        .map((p) => buildHorizontalCard(p))
+                        .toList(),
                   ),
                 ),
+
                 const SizedBox(height: 30),
+
                 Text(
                   "Recent Listings",
                   style: TextStyle(
@@ -227,7 +283,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 10),
                 Column(
-                  children: filteredHouses.map(buildVerticalCard).toList(),
+                  children: filteredHouses
+                      .map((p) => buildVerticalCard(p))
+                      .toList(),
                 ),
               ],
             ),

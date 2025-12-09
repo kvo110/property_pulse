@@ -1,5 +1,6 @@
 // screens/details_screen.dart
-// Supports multiple images, favorites, edit/delete, and now Message Seller.
+// Supports multiple images, favorites, edit/delete, and Message Seller.
+// Also wires messaging into per-property chat threads.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -66,7 +67,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (currentUserId == null) return;
+    if (currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in to use favorites")),
+      );
+      return;
+    }
 
     final propertyProvider = Provider.of<PropertyProvider>(
       context,
@@ -111,7 +117,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     Navigator.pop(context);
   }
 
-  // ⭐ START CHAT FEATURE
+  // Starts or opens chat between buyer and seller for THIS listing.
   Future<void> _startChat() async {
     final sellerId = widget.property["ownerId"];
     final buyerId = FirebaseAuth.instance.currentUser?.uid;
@@ -130,17 +136,25 @@ class _DetailsScreenState extends State<DetailsScreen> {
       return;
     }
 
-    // Generate chat ID that stays consistent
+    final propertyId = widget.property["id"] ?? "";
+    final propertyTitle = widget.property["title"] ?? "Listing";
+
+    // Per-property thread: include property id so each listing has its own chat
     final sorted = [buyerId, sellerId]..sort();
-    final chatId = "${sorted[0]}_${sorted[1]}";
+    final chatId = "${sorted[0]}_${sorted[1]}_$propertyId";
 
     final chatRef = FirebaseFirestore.instance.collection("chats").doc(chatId);
 
-    if (!(await chatRef.get()).exists) {
+    final existing = await chatRef.get();
+    if (!existing.exists) {
       await chatRef.set({
         "participants": [buyerId, sellerId],
+        "propertyId": propertyId,
+        "propertyTitle": propertyTitle,
         "lastMessage": "",
         "lastTimestamp": FieldValue.serverTimestamp(),
+        "unreadCounts": {buyerId: 0, sellerId: 0},
+        "lastSeen": {buyerId: FieldValue.serverTimestamp(), sellerId: null},
       });
     }
 
@@ -199,20 +213,45 @@ class _DetailsScreenState extends State<DetailsScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Images
+            // image carousel
             SizedBox(
               height: 260,
-              child: PageView.builder(
-                itemCount: images.length,
-                onPageChanged: (i) => setState(() => currentIndex = i),
-                itemBuilder: (_, i) {
-                  return Image.network(
-                    images[i],
-                    width: double.infinity,
-                    height: 260,
-                    fit: BoxFit.cover,
-                  );
-                },
+              child: Stack(
+                children: [
+                  PageView.builder(
+                    itemCount: images.length,
+                    onPageChanged: (i) => setState(() => currentIndex = i),
+                    itemBuilder: (_, i) {
+                      return Image.network(
+                        images[i],
+                        width: double.infinity,
+                        height: 260,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(images.length, (i) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: currentIndex == i ? 12 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: currentIndex == i
+                                ? Colors.white
+                                : Colors.white54,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -230,6 +269,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ),
 
                   const SizedBox(height: 10),
+
                   Text(
                     widget.property["location"],
                     style: TextStyle(
@@ -276,7 +316,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   const SizedBox(height: 25),
 
-                  // ⭐ Message Seller Button
                   if (!isOwner)
                     SizedBox(
                       width: double.infinity,

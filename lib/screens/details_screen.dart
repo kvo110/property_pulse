@@ -1,12 +1,14 @@
 // screens/details_screen.dart
-// Supports multiple images, Firestore favorites, and owner edit/delete.
+// Supports multiple images, favorites, edit/delete, and now Message Seller.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../providers/property_provider.dart';
 import 'edit_property_screen.dart';
+import 'chat_screen.dart';
 
 class DetailsScreen extends StatefulWidget {
   final Map<String, dynamic> property;
@@ -29,14 +31,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void initState() {
     super.initState();
 
-    // Always ensure images exists
     final rawImages = widget.property["images"];
-    if (rawImages is List) {
+    if (rawImages is List && rawImages.isNotEmpty) {
       images = rawImages.map((e) => e.toString()).toList();
-    } else if (rawImages is String && rawImages.isNotEmpty) {
-      images = [rawImages];
     } else {
-      images = ["https://via.placeholder.com/400x300.png?text=No+Image"];
+      images = [
+        widget.property["image"] ??
+            "https://via.placeholder.com/400x300.png?text=No+Image",
+      ];
     }
 
     _initFavoriteState();
@@ -64,12 +66,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to use favorites")),
-      );
-      return;
-    }
+    if (currentUserId == null) return;
 
     final propertyProvider = Provider.of<PropertyProvider>(
       context,
@@ -84,50 +81,77 @@ class _DetailsScreenState extends State<DetailsScreen> {
       property: widget.property,
       makeFavorite: newState,
     );
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          newState ? "Added to favorites" : "Removed from favorites",
-        ),
-      ),
-    );
   }
 
   Future<void> _deleteListing() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text("Delete Listing"),
-          content: const Text("Are you sure? This cannot be undone."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text("Delete"),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Listing"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
     );
 
     if (confirm != true) return;
 
-    final propertyProvider = Provider.of<PropertyProvider>(
-      context,
-      listen: false,
-    );
-
-    await propertyProvider.deleteProperty(widget.property["id"]);
+    final provider = Provider.of<PropertyProvider>(context, listen: false);
+    await provider.deleteProperty(widget.property["id"]);
 
     if (!mounted) return;
     Navigator.pop(context);
+  }
+
+  // ⭐ START CHAT FEATURE
+  Future<void> _startChat() async {
+    final sellerId = widget.property["ownerId"];
+    final buyerId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (buyerId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please log in to chat")));
+      return;
+    }
+
+    if (buyerId == sellerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You can't message yourself")),
+      );
+      return;
+    }
+
+    // Generate chat ID that stays consistent
+    final sorted = [buyerId, sellerId]..sort();
+    final chatId = "${sorted[0]}_${sorted[1]}";
+
+    final chatRef = FirebaseFirestore.instance.collection("chats").doc(chatId);
+
+    if (!(await chatRef.get()).exists) {
+      await chatRef.set({
+        "participants": [buyerId, sellerId],
+        "lastMessage": "",
+        "lastTimestamp": FieldValue.serverTimestamp(),
+      });
+    }
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(chatId: chatId, otherUserId: sellerId),
+      ),
+    );
   }
 
   @override
@@ -139,11 +163,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
         title: Text(widget.property["title"]),
         actions: [
           IconButton(
-            onPressed: _toggleFavorite,
             icon: Icon(
               isFavorite ? Icons.favorite : Icons.favorite_border,
               color: isFavorite ? Colors.red : null,
             ),
+            onPressed: _toggleFavorite,
           ),
           if (isOwner)
             IconButton(
@@ -174,47 +198,21 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image carousel
+            // Images
             SizedBox(
               height: 260,
-              child: Stack(
-                children: [
-                  PageView.builder(
-                    itemCount: images.length,
-                    onPageChanged: (i) => setState(() => currentIndex = i),
-                    itemBuilder: (_, i) {
-                      return Image.network(
-                        images[i],
-                        width: double.infinity,
-                        height: 260,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(images.length, (i) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: currentIndex == i ? 12 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: currentIndex == i
-                                ? Colors.white
-                                : Colors.white54,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
+              child: PageView.builder(
+                itemCount: images.length,
+                onPageChanged: (i) => setState(() => currentIndex = i),
+                itemBuilder: (_, i) {
+                  return Image.network(
+                    images[i],
+                    width: double.infinity,
+                    height: 260,
+                    fit: BoxFit.cover,
+                  );
+                },
               ),
             ),
 
@@ -231,17 +229,16 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 6),
-
+                  const SizedBox(height: 10),
                   Text(
                     widget.property["location"],
                     style: TextStyle(
                       fontSize: 16,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   Row(
                     children: [
@@ -249,17 +246,16 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       Text(
                         "\$${widget.property["value"]}",
                         style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.green,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          color: Colors.green,
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 25),
 
-                  /// *** FIXED OVERFLOW AREA ***
                   Row(
                     children: [
                       Expanded(
@@ -277,6 +273,19 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 25),
+
+                  // ⭐ Message Seller Button
+                  if (!isOwner)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: const Text("Message Seller"),
+                        onPressed: _startChat,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -292,7 +301,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [

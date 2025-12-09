@@ -1,6 +1,5 @@
 // screens/edit_property_screen.dart
-// Updated to support MULTIPLE IMAGES instead of a single URL.
-// Users can add/remove/update image URLs dynamically.
+// Lets owners edit an existing listing, including images, sqft, and description.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,8 +20,10 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late TextEditingController valueController;
   late TextEditingController bedsController;
   late TextEditingController bathsController;
+  late TextEditingController sqftController;
+  late TextEditingController descriptionController;
 
-  // Now a LIST of image controllers
+  // List of image controllers for multi-image editing
   List<TextEditingController> imageControllers = [];
 
   bool isLoading = false;
@@ -46,9 +47,25 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     bathsController = TextEditingController(
       text: widget.property["bathrooms"].toString(),
     );
+    sqftController = TextEditingController(
+      text: widget.property["sqft"]?.toString() ?? "",
+    );
+    descriptionController = TextEditingController(
+      text: widget.property["description"]?.toString() ?? "",
+    );
 
-    // Convert Firestore list → text controllers
-    List<String> images = List<String>.from(widget.property["images"]);
+    // Convert Firestore list → text controllers so each URL is editable
+    List<String> images = [];
+    if (widget.property["images"] is List) {
+      images = List<String>.from(widget.property["images"]);
+    } else if (widget.property["image"] is String) {
+      images = [widget.property["image"]];
+    }
+
+    if (images.isEmpty) {
+      images = ["https://via.placeholder.com/400x300.png?text=No+Image"];
+    }
+
     for (var url in images) {
       imageControllers.add(TextEditingController(text: url));
     }
@@ -61,6 +78,8 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     valueController.dispose();
     bedsController.dispose();
     bathsController.dispose();
+    sqftController.dispose();
+    descriptionController.dispose();
 
     for (var c in imageControllers) {
       c.dispose();
@@ -74,7 +93,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         locationController.text.trim().isEmpty ||
         valueController.text.trim().isEmpty ||
         bedsController.text.trim().isEmpty ||
-        bathsController.text.trim().isEmpty) {
+        bathsController.text.trim().isEmpty ||
+        sqftController.text.trim().isEmpty ||
+        descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill out all required fields")),
       );
@@ -94,7 +115,6 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
     try {
       final provider = Provider.of<PropertyProvider>(context, listen: false);
-
       final id = widget.property["id"];
 
       await provider.updateProperty(id, {
@@ -103,7 +123,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         "value": int.tryParse(valueController.text.trim()) ?? 0,
         "bedrooms": int.tryParse(bedsController.text.trim()) ?? 0,
         "bathrooms": int.tryParse(bathsController.text.trim()) ?? 0,
-        "images": images, // <-- MULTIPLE IMAGES SAVED HERE
+        "sqft": int.tryParse(sqftController.text.trim()) ?? 0,
+        "description": descriptionController.text.trim(),
+        "images": images, // save updated images list
       });
 
       if (!mounted) return;
@@ -127,12 +149,14 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     String label,
     TextEditingController controller, {
     TextInputType type = TextInputType.text,
+    int maxLines = 1,
   }) {
     final theme = Theme.of(context);
 
     return TextField(
       controller: controller,
       keyboardType: type,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
         filled: true,
@@ -213,11 +237,20 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               ],
             ),
 
+            const SizedBox(height: 12),
+
+            _inputField(
+              "Square Feet",
+              sqftController,
+              type: TextInputType.number,
+            ),
+
+            const SizedBox(height: 12),
+
+            _inputField("Description", descriptionController, maxLines: 4),
+
             const SizedBox(height: 20),
 
-            // -----------------------------
-            // MULTIPLE IMAGE INPUTS SECTION
-            // -----------------------------
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -242,7 +275,6 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               ],
             ),
 
-            // Add new image URL
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

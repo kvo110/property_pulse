@@ -1,5 +1,5 @@
 // screens/add_property_screen.dart
-// Allows users to create listings with multiple images.
+// Allows users to create listings with multiple images, sqft, and description.
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,6 +18,8 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final valueController = TextEditingController();
   final bedsController = TextEditingController();
   final bathsController = TextEditingController();
+  final sqftController = TextEditingController();
+  final descriptionController = TextEditingController();
 
   // List of image controllers for multi-image support
   final List<TextEditingController> imageControllers = [
@@ -33,19 +35,23 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     valueController.dispose();
     bedsController.dispose();
     bathsController.dispose();
+    sqftController.dispose();
+    descriptionController.dispose();
     for (var c in imageControllers) {
       c.dispose();
     }
     super.dispose();
   }
 
-  // Save property with multiple images
+  // Save property with multiple images, sqft, and description
   Future<void> saveProperty() async {
     if (titleController.text.isEmpty ||
         locationController.text.isEmpty ||
         valueController.text.isEmpty ||
         bedsController.text.isEmpty ||
-        bathsController.text.isEmpty) {
+        bathsController.text.isEmpty ||
+        sqftController.text.isEmpty ||
+        descriptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill out all required fields")),
       );
@@ -73,19 +79,23 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         "value": int.tryParse(valueController.text.trim()) ?? 0,
         "bedrooms": int.tryParse(bedsController.text.trim()) ?? 0,
         "bathrooms": int.tryParse(bathsController.text.trim()) ?? 0,
-        "images": images, // <-- MULTIPLE IMAGES STORED HERE
+        "sqft": int.tryParse(sqftController.text.trim()) ?? 0,
+        "description": descriptionController.text.trim(),
+        "images": images, // multiple images stored here
         "ownerId": uid,
         "createdAt": DateTime.now(),
       });
 
       if (!mounted) return;
 
-      // Reset fields after saving
+      // Reset fields after saving so user can add another listing if they want
       titleController.clear();
       locationController.clear();
       valueController.clear();
       bedsController.clear();
       bathsController.clear();
+      sqftController.clear();
+      descriptionController.clear();
       for (var c in imageControllers) {
         c.clear();
       }
@@ -180,6 +190,26 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: sqftController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Square Feet"),
+            ),
+
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: descriptionController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: "Description",
+                hintText:
+                    "Describe the property (features, neighborhood, etc.)",
+              ),
             ),
 
             const SizedBox(height: 20),

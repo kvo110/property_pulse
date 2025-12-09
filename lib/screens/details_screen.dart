@@ -1,6 +1,6 @@
 // screens/details_screen.dart
-// Supports multiple images, favorites, edit/delete, and Message Seller.
-// Also wires messaging into per-property chat threads.
+// Supports multiple images, favorites, edit/delete, Message Seller,
+// sqft, and description display.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -172,6 +172,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final int sqft = (widget.property["sqft"] is int)
+        ? widget.property["sqft"] as int
+        : int.tryParse(widget.property["sqft"]?.toString() ?? "0") ?? 0;
+
+    final String description =
+        (widget.property["description"]?.toString() ?? "").trim();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.property["title"]),
@@ -282,7 +289,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   Row(
                     children: [
-                      const Icon(Icons.attach_money, color: Colors.green),
                       Text(
                         "\$${widget.property["value"]}",
                         style: const TextStyle(
@@ -294,7 +300,24 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 16),
+
+                  if (sqft > 0)
+                    Row(
+                      children: [
+                        const Icon(Icons.square_foot, size: 20),
+                        const SizedBox(width: 6),
+                        Text(
+                          "$sqft sqft",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 20),
 
                   Row(
                     children: [
@@ -315,6 +338,26 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ),
 
                   const SizedBox(height: 25),
+
+                  if (description.isNotEmpty) ...[
+                    Text(
+                      "Description",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                  ],
 
                   if (!isOwner)
                     SizedBox(

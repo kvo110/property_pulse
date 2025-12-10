@@ -1,6 +1,7 @@
 // screens/details_screen.dart
 // Supports multiple images, favorites, edit/delete, Message Seller,
-// sqft, description, Schedule Tour, and Property Comparison.
+// sqft, description, Schedule Tour, AND Property Comparison,
+// now with YEAR BUILT included.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -201,6 +202,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
         ? widget.property["sqft"]
         : int.tryParse(widget.property["sqft"]?.toString() ?? "0") ?? 0;
 
+    final int yearBuilt = (widget.property["yearBuilt"] is int)
+        ? widget.property["yearBuilt"]
+        : int.tryParse(widget.property["yearBuilt"]?.toString() ?? "0") ?? 0;
+
     final String description =
         (widget.property["description"]?.toString() ?? "").trim();
 
@@ -239,7 +244,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // IMAGES
             SizedBox(
               height: 260,
               child: PageView.builder(
@@ -256,7 +260,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ),
             ),
 
-            // PROPERTY INFO
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -291,12 +294,27 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   const SizedBox(height: 16),
 
-                  if (sqft > 0)
-                    Row(
+                  if (sqft > 0 || yearBuilt > 0)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.square_foot, size: 20),
-                        const SizedBox(width: 6),
-                        Text("$sqft sqft"),
+                        if (sqft > 0)
+                          Row(
+                            children: [
+                              const Icon(Icons.square_foot, size: 20),
+                              const SizedBox(width: 6),
+                              Text("$sqft sqft"),
+                            ],
+                          ),
+                        const SizedBox(height: 8),
+                        if (yearBuilt > 0)
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_month, size: 20),
+                              const SizedBox(width: 6),
+                              Text("Year Built: $yearBuilt"),
+                            ],
+                          ),
                       ],
                     ),
 
@@ -323,9 +341,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   const SizedBox(height: 25),
 
                   if (description.isNotEmpty) ...[
-                    Text(
+                    const Text(
                       "Description",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -335,96 +353,92 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     const SizedBox(height: 25),
                   ],
 
-                  // ACTION BUTTONS
                   if (!isOwner)
-                    Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.chat),
-                            label: const Text("Message Seller"),
-                            onPressed: _startChat,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.event_available_outlined),
-                            label: const Text("Schedule Tour"),
-                            onPressed: _openScheduleTour,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
+                    Consumer<ComparisonManager>(
+                      builder: (context, compare, _) {
+                        final selected = compare.isSelected(
+                          widget.property["id"],
+                        );
+                        final canCompare = compare.selected.length >= 2;
 
-                        // NEW — Comparison Buttons
-                        Consumer<ComparisonManager>(
-                          builder: (context, compare, _) {
-                            final bool selected = compare.isSelected(
-                              widget.property["id"],
-                            );
-                            final bool canCompare =
-                                compare.selected.length >= 2;
-
-                            return Column(
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    icon: Icon(
-                                      selected
-                                          ? Icons.check_circle
-                                          : Icons.circle_outlined,
-                                    ),
-                                    label: Text(
-                                      selected
-                                          ? "Added to Compare"
-                                          : "Add to Compare",
-                                    ),
-                                    onPressed: () {
-                                      compare.toggleProperty(widget.property);
-
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            selected
-                                                ? "Removed from comparison"
-                                                : "Added to comparison list",
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                        return Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                icon: Icon(
+                                  selected
+                                      ? Icons.check_circle
+                                      : Icons.circle_outlined,
                                 ),
+                                label: Text(
+                                  selected
+                                      ? "Added to Compare"
+                                      : "Add to Compare",
+                                ),
+                                onPressed: () {
+                                  compare.toggleProperty(widget.property);
 
-                                if (canCompare) ...[
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton.icon(
-                                      icon: const Icon(Icons.compare_arrows),
-                                      label: const Text("Compare Now"),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => ComparisonScreen(
-                                              properties: compare.selected,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        selected
+                                            ? "Removed from comparison"
+                                            : "Added to comparison list",
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
-                        ),
-                      ],
+                                  );
+                                },
+                              ),
+                            ),
+
+                            if (canCompare) ...[
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.compare_arrows),
+                                  label: const Text("Compare Now"),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ComparisonScreen(
+                                          properties: compare.selected,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+
+                  if (!isOwner) const SizedBox(height: 12),
+
+                  if (!isOwner)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.chat),
+                        label: const Text("Message Seller"),
+                        onPressed: _startChat,
+                      ),
+                    ),
+
+                  if (!isOwner) const SizedBox(height: 10),
+
+                  if (!isOwner)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.event_available_outlined),
+                        label: const Text("Schedule Tour"),
+                        onPressed: _openScheduleTour,
+                      ),
                     ),
                 ],
               ),

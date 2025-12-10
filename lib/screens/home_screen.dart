@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../providers/property_provider.dart';
 import 'details_screen.dart';
 import 'my_tours_screen.dart';
-import 'compare_selector_screen.dart'; // <-- correct navigation screen
+import 'compare_selector_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Sorting locally for the UI
+  // Sorting logic
   void _sortFilteredHouses() {
     if (activeFilter == null) return;
 
@@ -62,6 +62,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget buildHorizontalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
+    final int year = property["yearBuilt"] is int
+        ? property["yearBuilt"]
+        : int.tryParse("${property["yearBuilt"]}") ?? 0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -77,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
@@ -87,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Image.network(
                 _firstImage(property),
                 width: 260,
-                height: 120,
+                height: 100,
                 fit: BoxFit.cover,
               ),
             ),
@@ -95,7 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -112,6 +114,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
+
+                  if (year > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        "Built: $year",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurface.withOpacity(.7),
+                        ),
+                      ),
+                    ),
+
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -143,6 +158,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget buildVerticalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
+    final int year = property["yearBuilt"] is int
+        ? property["yearBuilt"]
+        : int.tryParse("${property["yearBuilt"]}") ?? 0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -169,16 +188,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: BoxFit.cover,
               ),
             ),
+
             ListTile(
               title: Text(
                 property["title"],
                 style: TextStyle(color: theme.colorScheme.onSurface),
               ),
-              subtitle: Text(
-                property["location"],
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(.7),
-                ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property["location"],
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(.7),
+                    ),
+                  ),
+                  if (year > 0)
+                    Text(
+                      "Built: $year",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(.7),
+                      ),
+                    ),
+                ],
               ),
               trailing: Text(
                 "\$${property["value"]}",

@@ -1,5 +1,5 @@
 // screens/edit_property_screen.dart
-// Lets owners edit an existing listing, including images, sqft, and description.
+// Lets owners edit an existing listing, including images, sqft, year built, and description.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,22 +21,19 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late TextEditingController bedsController;
   late TextEditingController bathsController;
   late TextEditingController sqftController;
+  late TextEditingController yearController;
   late TextEditingController descriptionController;
 
-  // List of image controllers for multi-image editing
   List<TextEditingController> imageControllers = [];
-
   bool isLoading = false;
 
   @override
   void initState() {
     super.initState();
 
-    titleController = TextEditingController(
-      text: widget.property["title"] ?? "",
-    );
+    titleController = TextEditingController(text: widget.property["title"]);
     locationController = TextEditingController(
-      text: widget.property["location"] ?? "",
+      text: widget.property["location"],
     );
     valueController = TextEditingController(
       text: widget.property["value"].toString(),
@@ -50,11 +47,13 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     sqftController = TextEditingController(
       text: widget.property["sqft"]?.toString() ?? "",
     );
+    yearController = TextEditingController(
+      text: widget.property["yearBuilt"]?.toString() ?? "",
+    );
     descriptionController = TextEditingController(
-      text: widget.property["description"]?.toString() ?? "",
+      text: widget.property["description"] ?? "",
     );
 
-    // Convert Firestore list → text controllers so each URL is editable
     List<String> images = [];
     if (widget.property["images"] is List) {
       images = List<String>.from(widget.property["images"]);
@@ -79,12 +78,11 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     bedsController.dispose();
     bathsController.dispose();
     sqftController.dispose();
+    yearController.dispose();
     descriptionController.dispose();
-
     for (var c in imageControllers) {
       c.dispose();
     }
-
     super.dispose();
   }
 
@@ -95,14 +93,14 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         bedsController.text.trim().isEmpty ||
         bathsController.text.trim().isEmpty ||
         sqftController.text.trim().isEmpty ||
+        yearController.text.trim().isEmpty ||
         descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill out all required fields")),
+        const SnackBar(content: Text("Please fill out all fields")),
       );
       return;
     }
 
-    // Turn controller list → pure strings
     final images = imageControllers
         .map(
           (c) => c.text.trim().isEmpty
@@ -124,8 +122,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         "bedrooms": int.tryParse(bedsController.text.trim()) ?? 0,
         "bathrooms": int.tryParse(bathsController.text.trim()) ?? 0,
         "sqft": int.tryParse(sqftController.text.trim()) ?? 0,
+        "yearBuilt": int.tryParse(yearController.text.trim()) ?? 0,
         "description": descriptionController.text.trim(),
-        "images": images, // save updated images list
+        "images": images,
       });
 
       if (!mounted) return;
@@ -136,10 +135,9 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
       Navigator.pop(context, true);
     } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error updating listing: $e")));
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
 
     setState(() => isLoading = false);
@@ -203,7 +201,6 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Edit Listing")),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -242,6 +239,14 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
             _inputField(
               "Square Feet",
               sqftController,
+              type: TextInputType.number,
+            ),
+
+            const SizedBox(height: 12),
+
+            _inputField(
+              "Year Built",
+              yearController,
               type: TextInputType.number,
             ),
 

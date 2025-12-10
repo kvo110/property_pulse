@@ -65,6 +65,7 @@ class PropertyProvider with ChangeNotifier {
           "bedrooms": data["bedrooms"] ?? 0,
           "bathrooms": data["bathrooms"] ?? 0,
           "sqft": data["sqft"] ?? 0,
+          "yearBuilt": data["yearBuilt"],
           "description": data["description"] ?? "",
           "images": images,
           "ownerId": data["ownerId"] ?? "",

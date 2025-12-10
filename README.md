@@ -35,3 +35,7 @@ Property Pulse focuses on core marketplace functionality: browsing listings, rob
   - Is there a dependency I am able to use to allow me the calendar chart to display onto my application?
 
     - table_calendar: ^3.0.9
+
+  - "Can you help me figure out why the edit detail screen is not keeping the year built value when I go back to edit details like the other data?"
+
+    - add "yearBuilt": data["yearBuilt"], into property_provider.dart

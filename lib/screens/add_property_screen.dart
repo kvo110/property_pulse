@@ -1,5 +1,5 @@
 // screens/add_property_screen.dart
-// Allows users to create listings with multiple images, sqft, and description.
+// Allows users to create listings with multiple images, sqft, description, and year built.
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,9 +19,9 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final bedsController = TextEditingController();
   final bathsController = TextEditingController();
   final sqftController = TextEditingController();
+  final yearController = TextEditingController();
   final descriptionController = TextEditingController();
 
-  // List of image controllers for multi-image support
   final List<TextEditingController> imageControllers = [
     TextEditingController(),
   ];
@@ -36,6 +36,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     bedsController.dispose();
     bathsController.dispose();
     sqftController.dispose();
+    yearController.dispose();
     descriptionController.dispose();
     for (var c in imageControllers) {
       c.dispose();
@@ -43,7 +44,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     super.dispose();
   }
 
-  // Save property with multiple images, sqft, and description
   Future<void> saveProperty() async {
     if (titleController.text.isEmpty ||
         locationController.text.isEmpty ||
@@ -51,6 +51,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         bedsController.text.isEmpty ||
         bathsController.text.isEmpty ||
         sqftController.text.isEmpty ||
+        yearController.text.isEmpty ||
         descriptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill out all required fields")),
@@ -63,7 +64,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      // Collect non-empty URLs
       List<String> images = imageControllers
           .map((c) => c.text.trim())
           .where((url) => url.isNotEmpty)
@@ -80,21 +80,22 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         "bedrooms": int.tryParse(bedsController.text.trim()) ?? 0,
         "bathrooms": int.tryParse(bathsController.text.trim()) ?? 0,
         "sqft": int.tryParse(sqftController.text.trim()) ?? 0,
+        "yearBuilt": int.tryParse(yearController.text.trim()) ?? 0,
         "description": descriptionController.text.trim(),
-        "images": images, // multiple images stored here
+        "images": images,
         "ownerId": uid,
         "createdAt": DateTime.now(),
       });
 
       if (!mounted) return;
 
-      // Reset fields after saving so user can add another listing if they want
       titleController.clear();
       locationController.clear();
       valueController.clear();
       bedsController.clear();
       bathsController.clear();
       sqftController.clear();
+      yearController.clear();
       descriptionController.clear();
       for (var c in imageControllers) {
         c.clear();
@@ -152,7 +153,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Standard fields
             TextField(
               controller: titleController,
               decoration: const InputDecoration(labelText: "Title"),
@@ -167,8 +167,8 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
             TextField(
               controller: valueController,
-              keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Price"),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
 
@@ -177,16 +177,16 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 Expanded(
                   child: TextField(
                     controller: bedsController,
-                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: "Bedrooms"),
+                    keyboardType: TextInputType.number,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
                     controller: bathsController,
-                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: "Bathrooms"),
+                    keyboardType: TextInputType.number,
                   ),
                 ),
               ],
@@ -196,8 +196,16 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
             TextField(
               controller: sqftController,
-              keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Square Feet"),
+              keyboardType: TextInputType.number,
+            ),
+
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: yearController,
+              decoration: const InputDecoration(labelText: "Year Built"),
+              keyboardType: TextInputType.number,
             ),
 
             const SizedBox(height: 12),
@@ -205,16 +213,11 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
             TextField(
               controller: descriptionController,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: "Description",
-                hintText:
-                    "Describe the property (features, neighborhood, etc.)",
-              ),
+              decoration: const InputDecoration(labelText: "Description"),
             ),
 
             const SizedBox(height: 20),
 
-            // MULTIPLE IMAGE INPUT FIELDS
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -250,7 +253,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
             const SizedBox(height: 20),
 
-            // Save button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

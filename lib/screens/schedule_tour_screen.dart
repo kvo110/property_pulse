@@ -73,16 +73,8 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     final buyerId = user.uid;
     final sellerId = widget.property["ownerId"] ?? "";
     final propertyId = widget.property["id"] ?? "";
-    final propertyTitle = widget.property["title"] ?? "Listing";
 
-    if (sellerId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Missing seller information")),
-      );
-      return;
-    }
-
-    // Combine date and time into a single DateTime
+    // Combine date & time
     final scheduled = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -94,15 +86,34 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      // 1. Check if seller is busy
+      final conflictQuery = await FirebaseFirestore.instance
+          .collection("tours")
+          .where("sellerId", isEqualTo: sellerId)
+          .where("scheduledAt", isEqualTo: Timestamp.fromDate(scheduled))
+          .get();
+
+      if (conflictQuery.docs.isNotEmpty) {
+        // Seller already booked at this time
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("The seller is unavailable at this time."),
+          ),
+        );
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
+      // 2. No conflict → create the tour
       await FirebaseFirestore.instance.collection("tours").add({
         "propertyId": propertyId,
-        "propertyTitle": propertyTitle,
+        "propertyTitle": widget.property["title"] ?? "Listing",
         "sellerId": sellerId,
         "buyerId": buyerId,
         "scheduledAt": Timestamp.fromDate(scheduled),
-        "tourType": _tourType, // "virtual" or "in_person"
+        "tourType": _tourType,
         "note": _noteController.text.trim(),
-        "status": "pending", // seller could later confirm/decline
+        "status": "pending",
         "createdAt": FieldValue.serverTimestamp(),
       });
 
@@ -117,7 +128,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error sending request: $e")));
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
 
     if (mounted) setState(() => _isSubmitting = false);

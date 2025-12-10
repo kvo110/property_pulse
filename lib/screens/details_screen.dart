@@ -320,7 +320,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   Row(
                     children: [
-                      const Icon(Icons.attach_money, color: Colors.green),
                       Text(
                         "\$${widget.property["value"]}",
                         style: const TextStyle(

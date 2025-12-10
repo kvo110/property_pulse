@@ -1,6 +1,5 @@
 // providers/property_provider.dart
-// Handles pulling property listings from Firestore, CRUD, favorites,
-// AND NOW: comparison list support.
+// Handles pulling property listings from Firestore and simple CRUD + favorites.
 
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,46 +8,15 @@ class PropertyProvider with ChangeNotifier {
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection("properties");
 
-  // NEW: Comparison List (max 3 properties)
-  final List<Map<String, dynamic>> _comparisonList = [];
-
-  List<Map<String, dynamic>> get comparisonList =>
-      List.unmodifiable(_comparisonList);
-
-  bool isInComparison(String propertyId) {
-    return _comparisonList.any((p) => p["id"] == propertyId);
-  }
-
-  bool addToComparison(Map<String, dynamic> property) {
-    if (_comparisonList.length >= 3) return false;
-
-    if (!isInComparison(property["id"])) {
-      _comparisonList.add(property);
-      notifyListeners();
-      return true;
-    }
-    return false;
-  }
-
-  void removeFromComparison(String propertyId) {
-    _comparisonList.removeWhere((p) => p["id"] == propertyId);
-    notifyListeners();
-  }
-
-  void clearComparison() {
-    _comparisonList.clear();
-    notifyListeners();
-  }
-
-  // Existing Firestore property stream
+  // Stream all properties from Firestore as a list of maps
   Stream<List<Map<String, dynamic>>> allPropertiesStream() {
     return propertiesRef.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
 
+        // make sure images is always a List<String>
         final rawImages = data["images"];
         List<String> images;
-
         if (rawImages is List) {
           images = rawImages.map((e) => e.toString()).toList();
         } else if (rawImages is String && rawImages.isNotEmpty) {
@@ -65,7 +33,8 @@ class PropertyProvider with ChangeNotifier {
           "bedrooms": data["bedrooms"] ?? 0,
           "bathrooms": data["bathrooms"] ?? 0,
           "sqft": data["sqft"] ?? 0,
-          "yearBuilt": data["yearBuilt"],
+          "yearBuilt": data["yearBuilt"] ?? 0,
+          "propertyType": data["propertyType"] ?? "",
           "description": data["description"] ?? "",
           "images": images,
           "ownerId": data["ownerId"] ?? "",
@@ -75,16 +44,18 @@ class PropertyProvider with ChangeNotifier {
     });
   }
 
-  // Update & Delete property
+  // Update an existing property
   Future<void> updateProperty(String id, Map<String, dynamic> updates) async {
     await propertiesRef.doc(id).update(updates);
   }
 
+  // Delete a property
   Future<void> deleteProperty(String id) async {
     await propertiesRef.doc(id).delete();
   }
 
-  // Favorites
+  // Stream the current user's favorites from:
+  // users/{uid}/favorites/{propertyId}
   Stream<List<Map<String, dynamic>>> userFavoritesStream(String uid) {
     return FirebaseFirestore.instance
         .collection("users")
@@ -98,7 +69,6 @@ class PropertyProvider with ChangeNotifier {
 
             final rawImages = data["images"];
             List<String> images;
-
             if (rawImages is List) {
               images = rawImages.map((e) => e.toString()).toList();
             } else if (rawImages is String && rawImages.isNotEmpty) {
@@ -117,6 +87,8 @@ class PropertyProvider with ChangeNotifier {
               "bedrooms": data["bedrooms"] ?? 0,
               "bathrooms": data["bathrooms"] ?? 0,
               "sqft": data["sqft"] ?? 0,
+              "yearBuilt": data["yearBuilt"] ?? 0,
+              "propertyType": data["propertyType"] ?? "",
               "description": data["description"] ?? "",
               "images": images,
               "ownerId": data["ownerId"] ?? "",
@@ -126,6 +98,7 @@ class PropertyProvider with ChangeNotifier {
         });
   }
 
+  // Check if a specific property is in the user's favorites
   Future<bool> isFavorite(String uid, String propertyId) async {
     final favRef = FirebaseFirestore.instance
         .collection("users")
@@ -137,6 +110,7 @@ class PropertyProvider with ChangeNotifier {
     return snap.exists;
   }
 
+  // Add or remove a favorite for the current user
   Future<void> setFavorite({
     required String uid,
     required Map<String, dynamic> property,
@@ -157,6 +131,8 @@ class PropertyProvider with ChangeNotifier {
         "bedrooms": property["bedrooms"],
         "bathrooms": property["bathrooms"],
         "sqft": property["sqft"] ?? 0,
+        "yearBuilt": property["yearBuilt"] ?? 0,
+        "propertyType": property["propertyType"] ?? "",
         "description": property["description"] ?? "",
         "images": property["images"],
         "ownerId": property["ownerId"],

@@ -1,5 +1,5 @@
 // screens/add_property_screen.dart
-// Allows users to create listings with multiple images, sqft, description, and year built.
+// Allows users to create listings with multiple images, sqft, description, year built, and property type.
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,6 +22,17 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final yearController = TextEditingController();
   final descriptionController = TextEditingController();
 
+  // Simple dropdown list for property types
+  final List<String> propertyTypes = const [
+    "House",
+    "Condo",
+    "Townhome",
+    "Multi-Family",
+  ];
+
+  String? selectedPropertyType;
+
+  // Multiple image URLs
   final List<TextEditingController> imageControllers = [
     TextEditingController(),
   ];
@@ -52,9 +63,14 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         bathsController.text.isEmpty ||
         sqftController.text.isEmpty ||
         yearController.text.isEmpty ||
-        descriptionController.text.isEmpty) {
+        descriptionController.text.isEmpty ||
+        selectedPropertyType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill out all required fields")),
+        const SnackBar(
+          content: Text(
+            "Please fill out all required fields, including property type",
+          ),
+        ),
       );
       return;
     }
@@ -64,6 +80,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
+      // Collect any non-empty image URLs
       List<String> images = imageControllers
           .map((c) => c.text.trim())
           .where((url) => url.isNotEmpty)
@@ -81,6 +98,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         "bathrooms": int.tryParse(bathsController.text.trim()) ?? 0,
         "sqft": int.tryParse(sqftController.text.trim()) ?? 0,
         "yearBuilt": int.tryParse(yearController.text.trim()) ?? 0,
+        "propertyType": selectedPropertyType ?? "",
         "description": descriptionController.text.trim(),
         "images": images,
         "ownerId": uid,
@@ -89,6 +107,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
       if (!mounted) return;
 
+      // Clear fields so the user can submit another listing if they want
       titleController.clear();
       locationController.clear();
       valueController.clear();
@@ -97,6 +116,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       sqftController.clear();
       yearController.clear();
       descriptionController.clear();
+      selectedPropertyType = null;
       for (var c in imageControllers) {
         c.clear();
       }
@@ -206,6 +226,37 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
               controller: yearController,
               decoration: const InputDecoration(labelText: "Year Built"),
               keyboardType: TextInputType.number,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Property type dropdown
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Property Type",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<String>(
+              value: selectedPropertyType,
+              items: propertyTypes.map((type) {
+                return DropdownMenuItem(value: type, child: Text(type));
+              }).toList(),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Select property type",
+              ),
+              onChanged: (val) {
+                setState(() {
+                  selectedPropertyType = val;
+                });
+              },
             ),
 
             const SizedBox(height: 12),

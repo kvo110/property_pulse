@@ -1,7 +1,6 @@
 // screens/details_screen.dart
 // Supports multiple images, favorites, edit/delete, Message Seller,
-// sqft, description, Schedule Tour, AND Property Comparison,
-// now with YEAR BUILT included.
+// sqft, description, Schedule Tour, property comparison, year built, and property type.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -206,6 +205,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
         ? widget.property["yearBuilt"]
         : int.tryParse(widget.property["yearBuilt"]?.toString() ?? "0") ?? 0;
 
+    final String propertyType =
+        widget.property["propertyType"]?.toString() ?? "";
+
     final String description =
         (widget.property["description"]?.toString() ?? "").trim();
 
@@ -282,6 +284,22 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 10),
+
+                  if (propertyType.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.home_work_outlined, size: 20),
+                        const SizedBox(width: 6),
+                        Text(
+                          propertyType,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+
                   const SizedBox(height: 20),
                   Text(
                     "\$${widget.property["value"]}",
@@ -294,6 +312,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   const SizedBox(height: 16),
 
+                  // SQFT + YEAR BUILT
                   if (sqft > 0 || yearBuilt > 0)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,6 +372,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     const SizedBox(height: 25),
                   ],
 
+                  // Comparison buttons
                   if (!isOwner)
                     Consumer<ComparisonManager>(
                       builder: (context, compare, _) {

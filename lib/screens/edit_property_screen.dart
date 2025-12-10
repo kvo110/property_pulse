@@ -1,5 +1,5 @@
 // screens/edit_property_screen.dart
-// Lets owners edit an existing listing, including images, sqft, year built, and description.
+// Lets owners edit an existing listing, including images, sqft, year built, property type, and description.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +23,16 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   late TextEditingController sqftController;
   late TextEditingController yearController;
   late TextEditingController descriptionController;
+
+  // Shared property type list to stay consistent across the app
+  final List<String> propertyTypes = const [
+    "House",
+    "Condo",
+    "Townhome",
+    "Multi-Family",
+  ];
+
+  String? selectedPropertyType;
 
   List<TextEditingController> imageControllers = [];
   bool isLoading = false;
@@ -53,6 +63,11 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
     descriptionController = TextEditingController(
       text: widget.property["description"] ?? "",
     );
+
+    selectedPropertyType =
+        widget.property["propertyType"]?.toString().trim().isNotEmpty == true
+        ? widget.property["propertyType"].toString()
+        : null;
 
     List<String> images = [];
     if (widget.property["images"] is List) {
@@ -94,9 +109,12 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         bathsController.text.trim().isEmpty ||
         sqftController.text.trim().isEmpty ||
         yearController.text.trim().isEmpty ||
-        descriptionController.text.trim().isEmpty) {
+        descriptionController.text.trim().isEmpty ||
+        selectedPropertyType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill out all fields")),
+        const SnackBar(
+          content: Text("Please fill out all fields, including property type"),
+        ),
       );
       return;
     }
@@ -123,6 +141,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
         "bathrooms": int.tryParse(bathsController.text.trim()) ?? 0,
         "sqft": int.tryParse(sqftController.text.trim()) ?? 0,
         "yearBuilt": int.tryParse(yearController.text.trim()) ?? 0,
+        "propertyType": selectedPropertyType ?? "",
         "description": descriptionController.text.trim(),
         "images": images,
       });
@@ -248,6 +267,37 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
               "Year Built",
               yearController,
               type: TextInputType.number,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Property type dropdown
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Property Type",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<String>(
+              value: selectedPropertyType,
+              items: propertyTypes.map((type) {
+                return DropdownMenuItem(value: type, child: Text(type));
+              }).toList(),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Select property type",
+              ),
+              onChanged: (val) {
+                setState(() {
+                  selectedPropertyType = val;
+                });
+              },
             ),
 
             const SizedBox(height: 12),

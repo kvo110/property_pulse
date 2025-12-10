@@ -1,6 +1,6 @@
 // screens/details_screen.dart
 // Supports multiple images, favorites, edit/delete, Message Seller,
-// sqft, and description display.
+// sqft, description, and Schedule Tour.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/property_provider.dart';
 import 'edit_property_screen.dart';
 import 'chat_screen.dart';
+import 'schedule_tour_screen.dart';
 
 class DetailsScreen extends StatefulWidget {
   final Map<String, dynamic> property;
@@ -32,6 +33,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void initState() {
     super.initState();
 
+    // make sure we always have at least one image
     final rawImages = widget.property["images"];
     if (rawImages is List && rawImages.isNotEmpty) {
       images = rawImages.map((e) => e.toString()).toList();
@@ -168,6 +170,35 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
+  // Opens the schedule tour screen so the buyer can request a time.
+  void _openScheduleTour() {
+    final buyerId = FirebaseAuth.instance.currentUser?.uid;
+    final sellerId = widget.property["ownerId"];
+
+    if (buyerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in to schedule a tour")),
+      );
+      return;
+    }
+
+    if (buyerId == sellerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("You can't schedule a tour with yourself"),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ScheduleTourScreen(property: widget.property),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -289,6 +320,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
                   Row(
                     children: [
+                      const Icon(Icons.attach_money, color: Colors.green),
                       Text(
                         "\$${widget.property["value"]}",
                         style: const TextStyle(
@@ -360,13 +392,26 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ],
 
                   if (!isOwner)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.chat_bubble_outline),
-                        label: const Text("Message Seller"),
-                        onPressed: _startChat,
-                      ),
+                    Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.chat_bubble_outline),
+                            label: const Text("Message Seller"),
+                            onPressed: _startChat,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.event_available_outlined),
+                            label: const Text("Schedule Tour"),
+                            onPressed: _openScheduleTour,
+                          ),
+                        ),
+                      ],
                     ),
                 ],
               ),

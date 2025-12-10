@@ -1,6 +1,6 @@
 name: property_pulse
 description: "Property Pulse"
-publish_to: 'none' 
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -23,6 +23,9 @@ dependencies:
   cloud_firestore: ^5.0.0
   firebase_storage: ^12.0.0
 
+  # Calendar Table for calendar screen
+  table_calendar: ^3.0.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -31,8 +34,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Initialize assets 
+  # Initialize assets
   assets:
     - assets/images/
 
-  

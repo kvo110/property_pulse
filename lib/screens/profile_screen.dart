@@ -1,13 +1,15 @@
 // screens/profile_screen.dart
 // User profile/settings screen with theme-aware UI adjustments.
-// This version fixes card + text colors so they adapt to light/dark mode correctly.
+// Now also includes a shortcut to the Tour Calendar so sellers can manage tours.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../theme/theme_provider.dart';
 import '../screens/login_screen.dart';
+import 'tour_calendar_screen.dart'; // calendar for tour scheduling
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -48,6 +50,7 @@ class ProfileScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {
                 String newValue = controller.text.trim();
+                // phone can be blank, other fields should be non-empty
                 if (newValue.isNotEmpty || fieldName == "phoneNumber") {
                   await FirebaseFirestore.instance
                       .collection("users")
@@ -73,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
 
       body: ListView(
         children: [
-          // Theme mode toggle
+          // Dark mode toggle lives at the top so it's easy to find
           SwitchListTile(
             title: const Text("Dark Mode"),
             value: themeProvider.isDarkMode,
@@ -216,9 +219,31 @@ class ProfileScreen extends StatelessWidget {
             },
           ),
 
+          const SizedBox(height: 24),
+
+          // Tour calendar entry point so sellers can manage their tour requests
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Card(
+              child: ListTile(
+                leading: const Icon(Icons.calendar_month),
+                title: const Text("Tour Calendar"),
+                subtitle: const Text("View and manage scheduled tours"),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TourCalendarScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
           const SizedBox(height: 20),
 
-          // Logout
+          // Logout button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ElevatedButton(

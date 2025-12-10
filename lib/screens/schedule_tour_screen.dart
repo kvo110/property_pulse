@@ -1,6 +1,6 @@
 // screens/schedule_tour_screen.dart
-// Lets a buyer request a virtual or in-person tour for a specific property.
-// Requests are stored in Firestore "tours" collection so the seller can see them.
+// Lets a buyer request a virtual or in-person tour for a specific property,
+// while preventing double-booking by checking for overlapping times.
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +8,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class ScheduleTourScreen extends StatefulWidget {
   final Map<String, dynamic> property;
+
+  // Duration of each tour (in minutes) — used for conflict detection
+  static const int tourDurationMinutes = 60;
 
   const ScheduleTourScreen({super.key, required this.property});
 
@@ -18,7 +21,8 @@ class ScheduleTourScreen extends StatefulWidget {
 class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  String _tourType = "virtual"; // "virtual" or "in_person"
+
+  String _tourType = "virtual";
   final TextEditingController _noteController = TextEditingController();
 
   bool _isSubmitting = false;
@@ -29,8 +33,10 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     super.dispose();
   }
 
+  // User picks a calendar date
   Future<void> _pickDate() async {
     final now = DateTime.now();
+
     final picked = await showDatePicker(
       context: context,
       initialDate: now,
@@ -43,6 +49,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     }
   }
 
+  // User picks a time on that date
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -54,7 +61,9 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     }
   }
 
+  // This handles submitting a tour request + checking for scheduling conflicts
   Future<void> _submitRequest() async {
+    // Make sure user picked something
     if (_selectedDate == null || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please pick a date and time")),
@@ -71,11 +80,11 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     }
 
     final buyerId = user.uid;
-    final sellerId = widget.property["ownerId"] ?? "";
+    final sellerId = widget.property["ownerId"];
     final propertyId = widget.property["id"] ?? "";
 
-    // Combine date & time
-    final scheduled = DateTime(
+    // Combine date + time → full DateTime
+    final scheduledStart = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
       _selectedDate!.day,
@@ -83,37 +92,70 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
       _selectedTime!.minute,
     );
 
+    // End time — 60 mins later
+    final scheduledEnd = scheduledStart.add(
+      Duration(minutes: ScheduleTourScreen.tourDurationMinutes),
+    );
+
     setState(() => _isSubmitting = true);
 
     try {
-      // 1. Check if seller is busy
-      final conflictQuery = await FirebaseFirestore.instance
+      // 🔍 Conflict check —
+      // Look for any existing tours that overlap the requested time
+      final query = await FirebaseFirestore.instance
           .collection("tours")
           .where("sellerId", isEqualTo: sellerId)
-          .where("scheduledAt", isEqualTo: Timestamp.fromDate(scheduled))
+          .where(
+            "scheduledAt",
+            isGreaterThanOrEqualTo: Timestamp.fromDate(
+              scheduledStart.subtract(const Duration(hours: 1)),
+            ),
+          )
+          .where(
+            "scheduledAt",
+            isLessThanOrEqualTo: Timestamp.fromDate(
+              scheduledEnd.add(const Duration(hours: 1)),
+            ),
+          )
           .get();
 
-      if (conflictQuery.docs.isNotEmpty) {
-        // Seller already booked at this time
+      bool hasConflict = false;
+
+      for (var doc in query.docs) {
+        final existingStart = (doc["scheduledAt"] as Timestamp).toDate();
+        final existingEnd = existingStart.add(
+          const Duration(minutes: ScheduleTourScreen.tourDurationMinutes),
+        );
+
+        // Overlap formula: startA < endB && startB < endA
+        if (scheduledStart.isBefore(existingEnd) &&
+            existingStart.isBefore(scheduledEnd)) {
+          hasConflict = true;
+          break;
+        }
+      }
+
+      // Let user know if time is taken already
+      if (hasConflict) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("The seller is unavailable at this time."),
+            content: Text("The seller already has a tour around this time."),
           ),
         );
         setState(() => _isSubmitting = false);
         return;
       }
 
-      // 2. No conflict → create the tour
+      // Otherwise: create the tour request
       await FirebaseFirestore.instance.collection("tours").add({
         "propertyId": propertyId,
-        "propertyTitle": widget.property["title"] ?? "Listing",
+        "propertyTitle": widget.property["title"],
         "sellerId": sellerId,
         "buyerId": buyerId,
-        "scheduledAt": Timestamp.fromDate(scheduled),
+        "scheduledAt": Timestamp.fromDate(scheduledStart),
         "tourType": _tourType,
         "note": _noteController.text.trim(),
-        "status": "pending",
+        "status": "pending", // seller must accept/decline
         "createdAt": FieldValue.serverTimestamp(),
       });
 
@@ -134,6 +176,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     if (mounted) setState(() => _isSubmitting = false);
   }
 
+  // Helpers for display
   String _formattedDate() {
     if (_selectedDate == null) return "Pick a date";
     return "${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}";
@@ -145,8 +188,10 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
     final hour = _selectedTime!.hourOfPeriod == 0
         ? 12
         : _selectedTime!.hourOfPeriod;
+
     final minute = _selectedTime!.minute.toString().padLeft(2, "0");
     final period = _selectedTime!.period == DayPeriod.am ? "AM" : "PM";
+
     return "$hour:$minute $period";
   }
 
@@ -163,6 +208,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Property title + location
             Text(
               title,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -178,6 +224,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
 
             const SizedBox(height: 20),
 
+            // Tour type picker
             Text(
               "Tour Type",
               style: TextStyle(
@@ -210,6 +257,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
 
             const SizedBox(height: 20),
 
+            // Date + time picker
             Text(
               "Date & Time",
               style: TextStyle(
@@ -240,6 +288,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
 
             const SizedBox(height: 20),
 
+            // Optional note field
             Text(
               "Note to Seller (optional)",
               style: TextStyle(
@@ -261,6 +310,7 @@ class _ScheduleTourScreenState extends State<ScheduleTourScreen> {
 
             const SizedBox(height: 24),
 
+            // Submit button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(

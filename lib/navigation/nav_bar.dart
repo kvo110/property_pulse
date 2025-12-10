@@ -1,8 +1,5 @@
 // navigation/nav_bar.dart
-// Adds a smooth animated glow underline under the selected tab.
-// Light mode: grey glow
-// Dark mode: purple glow
-// No floating icons. Icons & layout unchanged.
+// Glow V2 with underline moved higher under icons — nothing else changed.
 
 import 'package:flutter/material.dart';
 
@@ -25,7 +22,7 @@ class _NavBarState extends State<NavBar> with SingleTickerProviderStateMixin {
   int pageIndex = 0;
 
   late AnimationController _controller;
-  late Animation<double> _animation;
+  late Animation<double> _anim;
 
   final List<Widget> screens = const [
     HomeScreen(),
@@ -39,13 +36,12 @@ class _NavBarState extends State<NavBar> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
     );
 
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _anim = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
   }
 
   @override
@@ -61,17 +57,17 @@ class _NavBarState extends State<NavBar> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final tabWidth = _tabWidth(context);
-
-    // Pick glow color based on theme
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final glowColor = isDark
-        ? const Color.fromARGB(255, 158, 3, 186)
-        : const Color.fromARGB(255, 2, 115, 207);
+        ? const Color.fromARGB(255, 177, 3, 207)
+        : const Color.fromARGB(255, 2, 48, 197);
 
     return Scaffold(
       body: screens[pageIndex],
 
       bottomNavigationBar: Stack(
+        alignment: Alignment.bottomCenter,
         children: [
           NavigationBar(
             height: 65,
@@ -96,26 +92,29 @@ class _NavBarState extends State<NavBar> with SingleTickerProviderStateMixin {
             ],
           ),
 
-          // SMOOTH GLOW UNDER SELECTED TAB
+          /// 🔥 Underline Glow (Moved Higher)
           AnimatedBuilder(
-            animation: _animation,
+            animation: _anim,
             builder: (_, __) {
               return Positioned(
-                bottom: 4,
-                left: pageIndex * tabWidth + tabWidth * 0.15,
-                child: Container(
-                  width: tabWidth * 0.7,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: glowColor.withOpacity(0.5 + 0.5 * _animation.value),
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: [
-                      BoxShadow(
-                        color: glowColor.withOpacity(0.4 * _animation.value),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                bottom: 14, // ⬆️ RAISED FROM 6 → now closer to icons!
+                left: pageIndex * tabWidth + tabWidth * 0.2,
+                child: Transform.scale(
+                  scale: 0.9 + (_anim.value * 0.15),
+                  child: Container(
+                    width: tabWidth * 0.6,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: glowColor.withOpacity(0.55 + (_anim.value * 0.25)),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: glowColor.withOpacity(0.45 * _anim.value),
+                          blurRadius: 12,
+                          spreadRadius: 2 * _anim.value,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

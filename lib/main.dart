@@ -10,7 +10,8 @@ import 'firebase_options.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
-import 'providers/property_provider.dart'; // <-- added
+import 'providers/property_provider.dart';
+import 'providers/comparison_manager.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -30,14 +31,13 @@ class PropertyPulse extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-
         ChangeNotifierProvider(
           create: (_) => AuthProvider()..listenToAuthState(),
         ),
+        ChangeNotifierProvider(create: (_) => PropertyProvider()),
 
-        ChangeNotifierProvider(
-          create: (_) => PropertyProvider(), // <-- NEW PROVIDER
-        ),
+        // NEW: Comparison provider
+        ChangeNotifierProvider(create: (_) => ComparisonManager()),
       ],
 
       child: Consumer<ThemeProvider>(
@@ -45,11 +45,9 @@ class PropertyPulse extends StatelessWidget {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'PropertyPulse',
-
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeProvider.currentTheme,
-
             home: const SplashScreen(),
           );
         },

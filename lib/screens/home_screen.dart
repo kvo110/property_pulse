@@ -1,12 +1,14 @@
 // screens/home_screen.dart
-// Home page displaying Firestore-powered listings with multi-image support
-// and filter sorting that doesn't call setState during build.
+// Home page displaying Firestore-powered listings with multi-image support,
+// filter sorting, My Tours shortcut, and Compare Properties selection.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/property_provider.dart';
 import 'details_screen.dart';
-import 'my_tours_screen.dart'; // <-- NEW: Buyer tour list screen
+import 'my_tours_screen.dart';
+import 'compare_selector_screen.dart'; // <-- correct navigation screen
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,31 +27,25 @@ class _HomeScreenState extends State<HomeScreen> {
     "Bathrooms",
   ];
 
-  // Helper to safely grab the first image from the list
+  // Safely grab the first image
   String _firstImage(Map<String, dynamic> property) {
     final rawImages = property["images"];
-
     if (rawImages is List && rawImages.isNotEmpty) {
       return rawImages.first.toString();
     }
-
     if (property["image"] != null) {
       return property["image"].toString();
     }
-
     return "https://via.placeholder.com/400x300.png?text=No+Image";
   }
 
   void applyFilter(String filter) {
     setState(() {
-      if (activeFilter == filter) {
-        activeFilter = null;
-      } else {
-        activeFilter = filter;
-      }
+      activeFilter = (activeFilter == filter) ? null : filter;
     });
   }
 
+  // Sorting locally for the UI
   void _sortFilteredHouses() {
     if (activeFilter == null) return;
 
@@ -62,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Horizontal card — FIXED OVERFLOW
+  // Horizontal card UI
   Widget buildHorizontalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -81,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // <-- FIX
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
@@ -99,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
-                mainAxisSize: MainAxisSize.min, // <-- FIX
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -123,14 +119,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       horizontal: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.15),
+                      color: Colors.green.withOpacity(.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       "Est. Value: \$${property['value']}",
                       style: const TextStyle(
-                        color: Colors.green,
                         fontWeight: FontWeight.w600,
+                        color: Colors.green,
                       ),
                     ),
                   ),
@@ -143,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Vertical card (no overflow issue)
+  // Vertical card layout
   Widget buildVerticalCard(Map<String, dynamic> property) {
     final theme = Theme.of(context);
 
@@ -181,14 +177,14 @@ class _HomeScreenState extends State<HomeScreen> {
               subtitle: Text(
                 property["location"],
                 style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onSurface.withOpacity(.7),
                 ),
               ),
               trailing: Text(
                 "\$${property["value"]}",
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
                   color: Colors.green,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -198,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // NEW — My Tours button
+  // My Tours shortcut card
   Widget _myToursCard() {
     final theme = Theme.of(context);
 
@@ -212,13 +208,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withOpacity(.06),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -245,6 +241,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Compare Properties Button → Goes to Compare Selector screen
+  Widget _compareButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.compare_arrows),
+        label: const Text("Compare Properties"),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CompareSelectorScreen()),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final propertyProvider = Provider.of<PropertyProvider>(context);
@@ -261,8 +274,6 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           filteredHouses = List.from(snapshot.data!);
-
-          // Apply sorting without setState
           _sortFilteredHouses();
 
           return SingleChildScrollView(
@@ -270,8 +281,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // NEW — Buyer Shortcut
                 _myToursCard(),
+                _compareButton(),
+
+                const SizedBox(height: 20),
 
                 Text(
                   "Quick Access",

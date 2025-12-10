@@ -1,6 +1,6 @@
 // screens/details_screen.dart
 // Supports multiple images, favorites, edit/delete, Message Seller,
-// sqft, description, and Schedule Tour.
+// sqft, description, Schedule Tour, and Property Comparison.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +8,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../providers/property_provider.dart';
+import '../providers/comparison_manager.dart';
+import 'comparison_screen.dart';
+
 import 'edit_property_screen.dart';
 import 'chat_screen.dart';
 import 'schedule_tour_screen.dart';
@@ -33,7 +36,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
   void initState() {
     super.initState();
 
-    // make sure we always have at least one image
     final rawImages = widget.property["images"];
     if (rawImages is List && rawImages.isNotEmpty) {
       images = rawImages.map((e) => e.toString()).toList();
@@ -70,9 +72,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
   Future<void> _toggleFavorite() async {
     if (currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to use favorites")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please log in first")));
       return;
     }
 
@@ -115,11 +117,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final provider = Provider.of<PropertyProvider>(context, listen: false);
     await provider.deleteProperty(widget.property["id"]);
 
-    if (!mounted) return;
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
-  // Starts or opens chat between buyer and seller for THIS listing.
   Future<void> _startChat() async {
     final sellerId = widget.property["ownerId"];
     final buyerId = FirebaseAuth.instance.currentUser?.uid;
@@ -141,7 +141,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final propertyId = widget.property["id"] ?? "";
     final propertyTitle = widget.property["title"] ?? "Listing";
 
-    // Per-property thread: include property id so each listing has its own chat
     final sorted = [buyerId, sellerId]..sort();
     final chatId = "${sorted[0]}_${sorted[1]}_$propertyId";
 
@@ -160,8 +159,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
       });
     }
 
-    if (!mounted) return;
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -170,23 +167,20 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
-  // Opens the schedule tour screen so the buyer can request a time.
   void _openScheduleTour() {
     final buyerId = FirebaseAuth.instance.currentUser?.uid;
     final sellerId = widget.property["ownerId"];
 
     if (buyerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to schedule a tour")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please log in first")));
       return;
     }
 
     if (buyerId == sellerId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("You can't schedule a tour with yourself"),
-        ),
+        const SnackBar(content: Text("You cannot schedule your own listing")),
       );
       return;
     }
@@ -204,7 +198,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final theme = Theme.of(context);
 
     final int sqft = (widget.property["sqft"] is int)
-        ? widget.property["sqft"] as int
+        ? widget.property["sqft"]
         : int.tryParse(widget.property["sqft"]?.toString() ?? "0") ?? 0;
 
     final String description =
@@ -224,20 +218,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
           if (isOwner)
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () async {
-                final updated = await Navigator.push(
+              onPressed: () {
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) =>
                         EditPropertyScreen(property: widget.property),
                   ),
                 );
-
-                if (updated == true && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Listing updated")),
-                  );
-                }
               },
             ),
           if (isOwner)
@@ -251,48 +239,24 @@ class _DetailsScreenState extends State<DetailsScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // image carousel
+            // IMAGES
             SizedBox(
               height: 260,
-              child: Stack(
-                children: [
-                  PageView.builder(
-                    itemCount: images.length,
-                    onPageChanged: (i) => setState(() => currentIndex = i),
-                    itemBuilder: (_, i) {
-                      return Image.network(
-                        images[i],
-                        width: double.infinity,
-                        height: 260,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(images.length, (i) {
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: currentIndex == i ? 12 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: currentIndex == i
-                                ? Colors.white
-                                : Colors.white54,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
+              child: PageView.builder(
+                itemCount: images.length,
+                onPageChanged: (i) => setState(() => currentIndex = i),
+                itemBuilder: (_, i) {
+                  return Image.network(
+                    images[i],
+                    width: double.infinity,
+                    height: 260,
+                    fit: BoxFit.cover,
+                  );
+                },
               ),
             ),
 
+            // PROPERTY INFO
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -306,8 +270,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 10),
-
+                  const SizedBox(height: 8),
                   Text(
                     widget.property["location"],
                     style: TextStyle(
@@ -317,18 +280,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ),
 
                   const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Text(
-                        "\$${widget.property["value"]}",
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    "\$${widget.property["value"]}",
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -338,13 +296,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       children: [
                         const Icon(Icons.square_foot, size: 20),
                         const SizedBox(width: 6),
-                        Text(
-                          "$sqft sqft",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
+                        Text("$sqft sqft"),
                       ],
                     ),
 
@@ -373,30 +325,24 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   if (description.isNotEmpty) ...[
                     Text(
                       "Description",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: theme.colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
+                    Text(description),
                     const SizedBox(height: 25),
                   ],
 
+                  // ACTION BUTTONS
                   if (!isOwner)
                     Column(
                       children: [
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            icon: const Icon(Icons.chat_bubble_outline),
+                            icon: const Icon(Icons.chat),
                             label: const Text("Message Seller"),
                             onPressed: _startChat,
                           ),
@@ -410,6 +356,74 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             onPressed: _openScheduleTour,
                           ),
                         ),
+                        const SizedBox(height: 15),
+
+                        // NEW — Comparison Buttons
+                        Consumer<ComparisonManager>(
+                          builder: (context, compare, _) {
+                            final bool selected = compare.isSelected(
+                              widget.property["id"],
+                            );
+                            final bool canCompare =
+                                compare.selected.length >= 2;
+
+                            return Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    icon: Icon(
+                                      selected
+                                          ? Icons.check_circle
+                                          : Icons.circle_outlined,
+                                    ),
+                                    label: Text(
+                                      selected
+                                          ? "Added to Compare"
+                                          : "Add to Compare",
+                                    ),
+                                    onPressed: () {
+                                      compare.toggleProperty(widget.property);
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            selected
+                                                ? "Removed from comparison"
+                                                : "Added to comparison list",
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+
+                                if (canCompare) ...[
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.compare_arrows),
+                                      label: const Text("Compare Now"),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ComparisonScreen(
+                                              properties: compare.selected,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
                       ],
                     ),
                 ],
@@ -422,11 +436,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Widget _infoBox(String label, String value) {
-    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(

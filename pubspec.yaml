@@ -1,6 +1,6 @@
 name: property_pulse
 description: "Property Pulse"
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -36,5 +36,4 @@ flutter:
 
   # Initialize assets
   assets:
-    - assets/images/
-
+    - assets/images/property_pulse_logo.png

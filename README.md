@@ -39,3 +39,8 @@ Property Pulse focuses on core marketplace functionality: browsing listings, rob
   - "Can you help me figure out why the edit detail screen is not keeping the year built value when I go back to edit details like the other data?"
 
     - add "yearBuilt": data["yearBuilt"], into property_provider.dart
+
+  - "Can you generate me a Log-In screen logo? I want a purple glow with a 3D style visual to it and a gradient auora style background"
+
+    - Generated a logo for the log in screen
+    - I had the image regenerated with a better aesthetic visualprop

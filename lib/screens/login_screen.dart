@@ -1,7 +1,5 @@
 // screens/login_screen.dart
-// Login UI for PropertyPulse.
-// This version is now fully connected to FirebaseAuth through AuthProvider.
-// Still keeping everything commented clearly so both of us can follow along easily.
+// Login UI for PropertyPulse with enlarged logo + enlarged login card.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -29,13 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Actual Firebase login through AuthProvider
   void _handleLogin() async {
     setState(() => isLoading = true);
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
-
-    // Calls the real Firebase login function in AuthProvider → AuthService
     final errorMsg = await auth.login(
       emailController.text.trim(),
       passwordController.text.trim(),
@@ -48,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(errorMsg)));
     } else {
-      // Login successful → navigate to SplashScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const SplashScreen()),
@@ -65,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: Container(
+        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -74,91 +69,116 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
 
         child: Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.symmetric(horizontal: 22),
-            decoration: BoxDecoration(
-              color: cardColor.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(14),
-            ),
-
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  "Welcome Back",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                // ---------- ENLARGED LOGO ----------
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: SizedBox(
+                    width: 360, // 🔥 increased from 320
+                    height: 150, // 🔥 proportional increase
+                    child: Image.asset(
+                      "assets/images/property_pulse_logo.png",
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 8),
-                Text(
-                  "Log in to your PropertyPulse account",
-                  style: TextStyle(color: Colors.grey[400]),
-                ),
+                const SizedBox(height: 45),
 
-                const SizedBox(height: 25),
+                // ---------- ENLARGED LOGIN CARD ----------
+                Container(
+                  width: 360, // 🔥 increased from 320
+                  padding: const EdgeInsets.all(28), // slightly more padding
+                  decoration: BoxDecoration(
+                    color: cardColor.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
 
-                TextField(
-                  controller: emailController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration("Email"),
-                ),
-
-                const SizedBox(height: 15),
-
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration("Password"),
-                ),
-
-                const SizedBox(height: 25),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  child: Column(
+                    children: [
+                      const Text(
+                        "Welcome to Property Pulse",
+                        style: TextStyle(
+                          fontSize: 22, // 🔥 slightly increased
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+
+                      const SizedBox(height: 10),
+                      Text(
+                        "Log in to your Property Pulse account",
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      TextField(
+                        controller: emailController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _inputDecoration("Email"),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _inputDecoration("Password"),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          )
-                        : const Text("Log In"),
-                  ),
-                ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text("Log In"),
+                        ),
+                      ),
 
-                const SizedBox(height: 14),
+                      const SizedBox(height: 16),
 
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                    );
-                  },
-                  child: Text(
-                    "Don't have an account? Sign up",
-                    style: TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w500,
-                    ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Don't have an account? Sign up",
+                          style: TextStyle(
+                            color: accent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -169,14 +189,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Keeps all input fields consistent with the style used in RegisterScreen
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       filled: true,
       fillColor: Colors.black26,
       labelText: label,
       labelStyle: TextStyle(color: Colors.grey[400]),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
